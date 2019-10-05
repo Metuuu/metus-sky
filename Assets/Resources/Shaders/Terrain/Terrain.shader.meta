@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 09f5e3878fd4c7848b03f149319f58ea
+timeCreated: 1505846931
+licenseType: Free
+ShaderImporter:
+  defaultTextures:
+  - _DefaultGroundTexture: {fileID: 2800000, guid: 1feabf6ed54578e479505b471705ceb9,
+      type: 3}
+  - _MountainsTexture: {fileID: 2800000, guid: 4785e388e18957e4aa226e9fe8f7f15f, type: 3}
+  - _MountainTopTexture: {fileID: 2800000, guid: 9b3b99a770975174c88a44462e2f2c33,
+      type: 3}
+  - _OceanBottomTexture: {fileID: 2800000, guid: af075ea93db262f448a6f6c59558dcfd,
+      type: 3}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

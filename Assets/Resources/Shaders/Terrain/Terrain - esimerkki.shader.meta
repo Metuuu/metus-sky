@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: a085cef131776f44ca0c90353759ef5c
+timeCreated: 1491571111
+licenseType: Free
+ShaderImporter:
+  defaultTextures:
+  - _DefaultGroundTexture: {fileID: 2800000, guid: b1bf4a42f4b70f44e9f099c8ea02e86b,
+      type: 3}
+  - _TestTex: {fileID: 2800000, guid: 4785e388e18957e4aa226e9fe8f7f15f, type: 3}
+  - _snow: {fileID: 2800000, guid: 9b3b99a770975174c88a44462e2f2c33, type: 3}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,0 +1,615 @@
+﻿//
+//	Code repository for GPU noise development blog
+//	http://briansharpe.wordpress.com
+//	https://github.com/BrianSharpe
+//
+//	I'm not one for copyrights.  Use the code however you wish.
+//	All I ask is that credit be given back to the blog or myself when appropriate.
+//	And also to let me know if you come up with any changes, improvements, thoughts or interesting uses for this stuff. :)
+//	Thanks!
+//
+//	Brian Sharpe
+//	brisharpe CIRCLE_A yahoo DOT com
+//	http://briansharpe.wordpress.com
+//	https://github.com/BrianSharpe
+//
+//===============================================================================
+//  Scape Software License
+//===============================================================================
+//
+//Copyright (c) 2007-2012, Giliam de Carpentier
+//All rights reserved.
+//
+//Redistribution and use in source and binary forms, with or without
+//modification, are permitted provided that the following conditions are met: 
+//
+//1. Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer. 
+//2. Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution. 
+//
+
+//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+//ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+//WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+//DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNERS OR CONTRIBUTORS BE LIABLE 
+//FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+//DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
+//SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+//OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+//OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.;
+
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel PerlinNoiseBottom
+#pragma kernel PerlinNoiseLeft
+#pragma kernel PerlinNoiseFront
+#pragma kernel PerlinNoiseRight
+#pragma kernel PerlinNoiseTop
+#pragma kernel PerlinNoiseBack
+
+#pragma kernel PerlinNoiseBottomV
+#pragma kernel PerlinNoiseLeftV
+#pragma kernel PerlinNoiseFrontV
+#pragma kernel PerlinNoiseRightV
+#pragma kernel PerlinNoiseTopV
+#pragma kernel PerlinNoiseBackV
+
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+float Seed;
+float MaxNoiseHeight;
+float Octaves;
+float Frequency;
+float Amplitude;
+float Lacunarity;
+float Persistence;
+vector Offset = vector(0, 0, 0, 0);
+
+float resolution;
+float zoom;
+
+RWTexture2D<float4> tex;
+
+RWStructuredBuffer<float> buffer;
+
+int joinBottom;
+int joinBottomB;
+int joinLeft;
+int joinLeftB;
+int joinRight;
+int joinRightB;
+int joinTop;
+int joinTopB;
+
+//int joinArr[] = {
+//	joinBottom,
+//	joinBottomB,
+//	joinLeft,
+//	joinLeftB,
+//	joinRight,
+//	joinRightB,
+//	joinTop,
+//	joinTopB
+//};
+//int joinArrLen = 9;
+
+
+// float PerlinNormal(int octaves, float3 offset, float frequency, float amplitude, float lacunarity, float persistence)
+
+
+void FAST32_hash_3D(float3 gridcell,
+	out float4 lowz_hash_0,
+	out float4 lowz_hash_1,
+	out float4 lowz_hash_2,
+	out float4 highz_hash_0,
+	out float4 highz_hash_1,
+	out float4 highz_hash_2)		//	generates 3 random numbers for each of the 8 cell corners
+{
+	//    gridcell is assumed to be an integer coordinate
+
+	//	TODO: 	these constants need tweaked to find the best possible noise.
+	//			probably requires some kind of brute force computational searching or something....
+	const float2 OFFSET = float2(50.0, 161.0);
+	const float DOMAIN = 69.0;
+	const float3 SOMELARGEFLOATS = float3(635.298681, 682.357502, 668.926525);
+	const float3 ZINC = float3(48.500388, 65.294118, 63.934599);
+
+	//	truncate the domain
+	gridcell.xyz = gridcell.xyz - floor(gridcell.xyz * (1.0 / DOMAIN)) * DOMAIN;
+	float3 gridcell_inc1 = step(gridcell, float3(DOMAIN - 1.5, DOMAIN - 1.5, DOMAIN - 1.5)) * (gridcell + 1.0);
+
+	//	calculate the noise
+	float4 P = float4(gridcell.xy, gridcell_inc1.xy) + OFFSET.xyxy;
+	P *= P;
+	P = P.xzxz * P.yyww;
+	float3 lowz_mod = float3(1.0 / (SOMELARGEFLOATS.xyz + gridcell.zzz * ZINC.xyz));
+	float3 highz_mod = float3(1.0 / (SOMELARGEFLOATS.xyz + gridcell_inc1.zzz * ZINC.xyz));
+	lowz_hash_0 = frac(P * lowz_mod.xxxx);
+	highz_hash_0 = frac(P * highz_mod.xxxx);
+	lowz_hash_1 = frac(P * lowz_mod.yyyy);
+	highz_hash_1 = frac(P * highz_mod.yyyy);
+	lowz_hash_2 = frac(P * lowz_mod.zzzz);
+	highz_hash_2 = frac(P * highz_mod.zzzz);
+}
+//
+//	Interpolation functions
+//	( smoothly increase from 0.0 to 1.0 as x increases linearly from 0.0 to 1.0 )
+//	http://briansharpe.wordpress.com/2011/11/14/two-useful-interpolation-functions-for-noise-development/
+//
+float3 Interpolation_C2(float3 x) { return x * x * x * (x * (x * 6.0 - 15.0) + 10.0); }
+//
+//	Perlin Noise 3D  ( gradient noise )
+//	Return value range of -1.0->1.0
+//	http://briansharpe.files.wordpress.com/2011/11/perlinsample.jpg
+//
+float Perlin3D(float3 P)
+{
+	//	establish our grid cell and unit position
+	float3 Pi = floor(P);
+	float3 Pf = P - Pi;
+	float3 Pf_min1 = Pf - 1.0;
+
+	//
+	//	classic noise.
+	//	requires 3 random values per point.  with an efficent hash function will run faster than improved noise
+	//
+
+	//	calculate the hash.
+	//	( various hashing methods listed in order of speed )
+	float4 hashx0, hashy0, hashz0, hashx1, hashy1, hashz1;
+	FAST32_hash_3D(Pi, hashx0, hashy0, hashz0, hashx1, hashy1, hashz1);
+
+	//	calculate the gradients
+	float4 grad_x0 = hashx0 - 0.49999;
+	float4 grad_y0 = hashy0 - 0.49999;
+	float4 grad_z0 = hashz0 - 0.49999;
+	float4 grad_x1 = hashx1 - 0.49999;
+	float4 grad_y1 = hashy1 - 0.49999;
+	float4 grad_z1 = hashz1 - 0.49999;
+	float4 grad_results_0 = rsqrt(grad_x0 * grad_x0 + grad_y0 * grad_y0 + grad_z0 * grad_z0) * (float2(Pf.x, Pf_min1.x).xyxy * grad_x0 + float2(Pf.y, Pf_min1.y).xxyy * grad_y0 + Pf.zzzz * grad_z0);
+	float4 grad_results_1 = rsqrt(grad_x1 * grad_x1 + grad_y1 * grad_y1 + grad_z1 * grad_z1) * (float2(Pf.x, Pf_min1.x).xyxy * grad_x1 + float2(Pf.y, Pf_min1.y).xxyy * grad_y1 + Pf_min1.zzzz * grad_z1);
+
+	//	Classic Perlin Interpolation
+	float3 blend = Interpolation_C2(Pf);
+	float4 res0 = lerp(grad_results_0, grad_results_1, blend.z);
+	float2 res1 = lerp(res0.xy, res0.zw, blend.y);
+	float final = lerp(res1.x, res1.y, blend.x);
+	final *= 1.1547005383792515290182975610039;		//	(optionally) scale things to a strict -1.0->1.0 range    *= 1.0/sqrt(0.75)
+	return final;
+}
+
+float PerlinNormal(float3 p, int octaves, float3 offset, float frequency, float amplitude, float lacunarity, float persistence, float maxNoiseHeight)
+{
+	float sum = 0;
+	for (int i = 0; i < octaves; ++i)
+	{
+		float h = 0;
+		h = Perlin3D((p*(1/zoom) + offset) * frequency);
+		sum += h*amplitude;
+		frequency *= lacunarity;
+		amplitude *= persistence;
+	}
+	//return h + 0.5f;
+	//return sum + 0.5f;
+	return (sum) * maxNoiseHeight; // TODO: mitkä on perlin noise parametrien ranget esim (0-1) jne. koska kun laittaa paljon jotain niin result ei ole [-1, 1] väliltä vaan menee tosi suuriksi ja pieniksi
+	//return (sum + 1.0f) / 2.0f * maxNoiseHeight;
+}
+
+
+// TODO: Calculate with 𝜋
+
+
+
+// ----------------  RENDER TEXTURE ---------------- \\
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseBottom(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, 0, id.y + Offset.z), Octaves, float3(0, resolution, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseLeft(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(0, id.y + Offset.y, id.x + Offset.z), Octaves, float3(resolution, 0, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseFront(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, id.y + Offset.y, 0), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseRight(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(0, id.y + Offset.y, resolution-id.x + Offset.z), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseTop(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, 0, resolution-id.y + Offset.z), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseBack(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, resolution-id.y + Offset.y, 0), Octaves, float3(0,0, resolution), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+
+
+// ----------------  FLOAT ARRAY ---------------- \\
+
+
+// FIXME: borders do not match in different resolutions always. (the lower the resolution the upper left the noise will go. fix that)
+// TODO: load only points for mesh collider and generate textures via shader with render texture ?
+
+float3 Join(int enabled, float3 joinPos, uint XorY, float3 extraOffset = float3(0, 0, 0)) {
+	return enabled * floor(((joinPos - 1) * -0.5 * (resolution - 1) + XorY * joinPos) / (resolution - 1)) * joinPos + extraOffset;
+}
+
+
+// Bottom
+float3 BottomXPos(float x) {
+	return x * float3(1, 0, 0);
+}
+float3 BottomYPos(float y) {
+	return y * float3(0, 0, 1);
+}
+float3 BottomOffset() {
+	return float3(Offset.x, resolution-1, Offset.z);
+}
+float3 BottomJBottom() {
+	return float3(0, 0, 1);
+}
+float3 BottomJRight() {
+	return float3(-1, 0, 0);
+}
+
+// Left
+float3 LeftXPos(float x) {
+	return x * float3(0, 0, 1);
+}
+float3 LeftYPos(float y) {
+	return y * float3(0, 1, 0);
+}
+float3 LeftOffset() {
+	return float3(resolution-1, Offset.y, Offset.z);
+}
+float3 LeftJRightB() {
+	return float3(-1, 0, 0);
+}
+float3 LeftJRight() {
+	return float3(0, 0, -1);
+}
+float3 LeftJBottom() {
+	return float3(-1, 1, 0);
+}
+float3 LeftJBottomB() {
+	return float3(0, 0, 0);
+	//return float3(-1, 1, 0);
+}
+
+// Front
+float3 FrontXPos(float x) {
+	return x * float3(1, 0, 0);
+}
+float3 FrontYPos(float y) {
+	return y * float3(0, 1, 0);
+}
+float3 FrontOffset() {
+	return float3(Offset.x, Offset.y, 0);
+}
+float3 frontJBottom() {
+	return float3(0, 1, 0);
+}
+float3 frontJBottomB() {
+	return float3(0, 1, 0);
+}
+float3 frontJRight() {
+	return float3(-1, 0, 0);
+}
+
+// Right
+float3 RightXPos(float x) {
+	return x * float3(0, 0, 1);
+}
+float3 RightYPos(float y) {
+	return y * float3(0, 1, 0);
+}
+float3 RightOffset() {
+	return float3(0, Offset.y, Offset.z);
+}
+float3 RightJLeftB() {
+	return float3(0, 0, 0);
+	//return float3(0, 0, -1);
+}
+float3 RightJRight() {
+	return float3(0, 0, 1);
+}
+float3 RightJBottom() {
+	//return float3(0, 0, 0);
+	return float3(0, 1, -1);
+}
+float3 RightJBottomB() {
+	return float3(0, 0, 0);
+	//return float3(0, 1, -1);
+}
+
+
+// Top
+float3 TopXPos() {
+	return float3(1, 0, 0);
+}
+float3 TopYPos() {
+	return float3(0, 0, 1);
+}
+float3 TopOffset() {
+	return float3(Offset.x, 0, Offset.z);
+}
+float3 TopJTopB() {
+	return float3(0, 0, 0);
+	//return float3(0, -1, 0);
+}
+float3 TopJLeftB() {
+	return float3(0, 0, 0);
+}
+float3 TopJRight() {
+	return float3(-1, 0, 0);
+	//return float3(-1, 0, 0);
+}
+float3 TopJRightB() {
+	return float3(0, 0, 0);
+}
+float3 TopJBottom() {
+	//return float3(0, 0, 0);
+	return float3(0, 0, -1);
+}
+float3 TopJBottomB() {
+	return float3(0, 0, 0);
+}
+
+// BACK
+float3 BackXPos() {
+	return float3(1, 0, 0);
+}
+float3 BackYPos() {
+	return float3(0, 1, 0);
+}
+float3 BackOffset() {
+	return float3(Offset.x, Offset.y, resolution-1);
+}
+float3 BackJTopB() {
+	return float3(0, 0, 0);
+	//return float3(0, -1, 0);
+}
+float3 BackJLeftB() {
+	return float3(0, 0, 0);
+	//return float3(0, 0, -1);
+}
+float3 BackJRight() {
+	return float3(-1, 0, 0);
+	//return float3(-1, 0, 0);
+}
+float3 BackJRightB() {
+	return float3(0, 0, 0);
+	//return float3(1, 0, -1);
+}
+float3 BackJBottom() {
+	//return float3(0, 0, 0);
+	return float3(0, -1, 0);
+}
+
+
+// --
+
+
+[numthreads(32, 32, 1)] // BOTTOM
+void PerlinNoiseBottomV(uint2 id : SV_DispatchThreadID)
+{
+	uint structs;
+	uint stride;
+
+	float x = id.x;
+	float y = id.y;
+
+	float3 R = Join(joinRight, BottomJRight(), x);
+	float3 B = Join(joinBottom, BottomJBottom(), y);
+
+	float3 position = BottomXPos(x) + BottomYPos(y) + BottomOffset() + R + B;
+
+	buffer.GetDimensions(structs, stride);
+
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+
+}
+
+[numthreads(32, 32, 1)] // LEFT
+void PerlinNoiseLeftV(uint2 id : SV_DispatchThreadID)
+{
+    uint structs;
+    uint stride;
+
+	float x = id.x;
+	float y = id.y;
+
+	float3 R = Join(joinRight, LeftJRight(), x);
+	float3 RB = Join(joinRightB, LeftJRightB(), x);
+	float3 B = Join(joinBottom, LeftJBottom(), y);
+	float3 BB = Join(joinBottomB, LeftJBottomB(), y);
+
+	float3 position = LeftXPos(x) + LeftYPos(y) + LeftOffset() + R + RB + B + BB;
+
+	/*float3 R = joinRight * floor(((LeftJRight() - 1) * -0.5 * (resolution - 1) + X * LeftJRight()) / (resolution - 1)) * LeftJRight();
+	float3 LB = joinRightB * floor(((LeftJRightB() - 1) * -0.5 * (resolution - 1) + X * LeftJRightB()) / (resolution - 1)) * LeftJRightB();
+	float3 B = joinBottom * floor(((LeftJBottom() - 1) * -0.5 * (resolution - 1) + Y * LeftJBottom()) / (resolution - 1)) * LeftJBottom();
+	float3 BB = joinBottomB * floor(((LeftJBottomB() - 1) * -0.5 * (resolution - 1) + Y * LeftJBottomB()) / (resolution - 1)) * LeftJBottomB();*/
+
+	buffer.GetDimensions(structs, stride);
+
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+
+	/*int ylis = floor((id.y + 1) / resolution);
+	int xlis = floor((resolution-1-id.x) / (resolution-1+ylis));
+    buffer.GetDimensions(structs, stride);
+    buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(-xlis - ylis, id.y + Offset.y + ylis, id.x + Offset.z), Octaves, float3(resolution, 0, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);*/
+}
+
+[numthreads(32, 32, 1)] // FRONT - ok
+void PerlinNoiseFrontV(uint2 id : SV_DispatchThreadID)
+{
+    uint structs;
+    uint stride;
+
+	/*float3 X = FrontX(id);
+	float3 Y = FrontY(id);*/
+
+	// jos frontRightJ = miinus pitää (resolution - 1) olla olemassa
+	//1 + 1 = 2;
+	//-1 + 1 = 0;
+	//(frontJRight() + 1) / 2 = 0
+	// 1 - 1 = 0
+	// -1 - 1 = -2 
+	//(frontJRight() - 1) * -0.5 = 1
+
+	float x = id.x;
+	float y = id.y;
+	float3 rj = Join(joinRight, frontJRight(), x);
+	float3 bj = Join(joinBottom, frontJBottom(), y);
+	float3 bjB = Join(joinBottomB, frontJBottomB(), y);
+
+	float3 position = FrontXPos(x) + FrontYPos(y) + FrontOffset() + rj + bj + bjB;
+
+	//float3 rj = joinRight * floor(((frontJRight() - 1) * -0.5 * (resolution - 1) + X * frontJRight()) / (resolution - 1)) * frontJRight();
+	//float3 bj = joinBottom * floor(((frontJBottom() - 1) * -0.5 * (resolution - 1) + Y * frontJBottom()) / (resolution - 1)) * frontJBottom();
+	//float3 bjB = joinBottomB * floor(((frontJBottomB() - 1) * -0.5 * (resolution - 1) + Y * frontJBottomB()) / (resolution - 1)) * frontJBottomB();
+	
+	buffer.GetDimensions(structs, stride);
+
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+
+
+	//int bj = joinBottom * floor(id.y / (resolution - 1));
+	//int bjB = joinBottomB * floor(id.y / (resolution - 1));
+	//int rj1 = joinRight * floor((resolution - 1 - id.x) / (resolution - 1));
+
+	//buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(id.x + Offset.x - rj, id.y + Offset.y + bj + bjB, 0), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+
+}
+
+
+[numthreads(32, 32, 1)] // RIGHT
+void PerlinNoiseRightV(uint2 id : SV_DispatchThreadID)
+{
+    uint structs;
+    uint stride;
+
+	//float3 X = RightX(id);
+	//float3 Y = RightY(id);
+
+	//int ylis = floor((id.y + 1) / resolution);
+	//int zlis = floor((id.x + 1) / (resolution + ylis));
+
+	/*float3 R = joinRight * floor(((RightJRight() - 1) * -0.5 * (resolution - 1) + X * RightJRight()) / (resolution - 1)) * RightJRight();
+	float3 LB = joinLeftB * floor(((RightJLeftB() - 1) * -0.5 * (resolution - 1) + X * RightJLeftB()) / (resolution - 1)) * RightJLeftB();
+	float3 B = joinBottom * floor(((RightJBottom() - 1) * -0.5 * (resolution - 1) + Y * RightJBottom()) / (resolution - 1)) * RightJBottom();
+	float3 BB = joinBottomB * floor(((RightJBottomB() - 1) * -0.5 * (resolution - 1) + Y * RightJBottomB()) / (resolution - 1)) * RightJBottomB();
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(X + Y + RightOffset() + R + LB + B + BB, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);*/
+
+
+	float x = resolution - id.x - 1;
+	float y = id.y;
+	float3 R = Join(joinRight, RightJRight(), x);
+	float3 LB = Join(joinLeftB, RightJLeftB(), x);
+	float3 B = Join(joinBottom, RightJBottom(), y);
+	float3 BB = Join(joinBottomB, RightJBottomB(), y);
+
+	float3 position = RightXPos(x) + RightYPos(y) + RightOffset() + R + LB + B + BB;
+
+	buffer.GetDimensions(structs, stride);
+
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+
+	//buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(0, id.y + Offset.y + ylis, resolution - id.x + Offset.z - zlis - ylis), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)] // TOP
+void PerlinNoiseTopV(uint2 id : SV_DispatchThreadID)
+{
+    uint structs;
+    uint stride;
+
+	/*int jlis = floor((resolution - 1 - id.x) / (resolution - 1));
+	int zlis = floor((id.y + 1) / resolution);
+	int xlis = floor((id.x + 1) / (resolution + zlis));
+	int ylis = floor((resolution - 1 - id.y) / (resolution - 1 + xlis + jlis));
+    buffer.GetDimensions(structs, stride);
+    buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(id.x + Offset.x + xlis, ylis, resolution - id.y + Offset.z - xlis - zlis), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);*/
+
+	float x = id.x;
+	float y = resolution - id.y - 1;
+	float3 TB = Join(joinTopB, TopJTopB(), y);
+	float3 R = Join(joinRight, TopJRight(), x);
+	float3 RB = Join(joinRightB, TopJRightB(), x);
+	float3 LB = Join(joinLeftB, TopJLeftB(), x);
+	float3 B = Join(joinBottom, TopJBottom(), y);
+	float3 BB = Join(joinBottomB, TopJBottomB(), y);
+
+	float3 position = x * TopXPos() + y * TopYPos() + TopOffset() + TB + R + RB + LB + B + BB;
+
+	buffer.GetDimensions(structs, stride);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)] // BACK
+void PerlinNoiseBackV(uint2 id : SV_DispatchThreadID)
+{
+    uint structs;
+    uint stride;
+	int xlis = floor((resolution - 1 - id.y) / (resolution - 1));
+	int ylis = floor((resolution - 1 - id.x) / (resolution - 1 + xlis));
+	int zlis = floor((id.x + 1) / (resolution + xlis + ylis));
+
+
+
+	float y = resolution - id.y - 1;
+	float3 TB = Join(joinTopB, BackJTopB(), y);
+	float3 R = Join(joinRight, BackJRight(), id.x);
+	float3 RB = Join(joinRightB, BackJRightB(), id.x);
+	float3 LB = Join(joinLeftB, BackJLeftB(), id.x);
+	float3 B = Join(joinBottom, BackJBottom(), y);
+
+	float3 position = id.x * BackXPos() + y * BackYPos() + BackOffset() + TB + R + RB + LB + B;
+
+	buffer.GetDimensions(structs, stride);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+    //buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(id.x + Offset.x + zlis, resolution - id.y + Offset.y - ylis - zlis, -xlis - zlis), Octaves, float3(0, 0, resolution), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+//float3 moveFront(x, y) {
+//	return float3(x, y, 0);
+//}
+//float3 moveRight(x, y) {
+//	return float3(0, y, x);
+//}
+//float3 moveLeft(uint2 id) {
+//	
+//
+//	joinBottom
+//
+//	int ylis = floor((id.y + 1) / resolution);
+//	int xlis = floor((resolution - 1 - id.x) / (resolution - 1 + ylis));
+//
+//	return float3(- xlis - ylis, ylis, 0)
+//
+//	return float3(0, y, x)
+//}

@@ -1,0 +1,88 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel DepthAndTesselation
+#pragma kernel TextureTest
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+
+
+
+RWStructuredBuffer<float3> vertexBuffer;
+RWStructuredBuffer<float3> normalBuffer;
+RWStructuredBuffer<float> heightMapBuffer;
+
+
+[numthreads(1, 1, 1)]
+void DepthAndTesselation(uint1 id : SV_DispatchThreadID)
+{
+    uint stride;
+    uint size;
+    heightMapBuffer.GetDimensions(size, stride);
+    uint hmWidth = sqrt(size);
+    
+    vertexBuffer.GetDimensions(size, stride);
+    uint vWidth = sqrt(size);
+
+    uint texPos = floor(hmWidth / vWidth * id.x);
+    
+    vertexBuffer[id.x] = vertexBuffer[id.x].xyz + (normalBuffer[id.x].xyz * heightMapBuffer[texPos]) / 5;
+	
+}
+
+
+
+RWTexture2D<float4> heightMap;
+
+[numthreads(32, 32, 1)]
+void TextureTest(uint2 id : SV_DispatchThreadID)
+{
+    uint stride;
+    uint size;
+    heightMapBuffer.GetDimensions(size, stride);
+    uint vWidth = sqrt(size);
+    
+    heightMap[id.xy] = heightMapBuffer[id.x + vWidth * id.y];
+	
+}
+
+
+
+
+/*
+void displacement(inout VertexInput v)
+{
+    float node_7447 = 2.0;
+    float3 SyvyysKeskittaja = (((_DepthLargeMountais / node_7447) * v.normal) + ((_DepthLowPlainHills / node_7447) * v.normal) + ((_DepthMed / node_7447) * v.normal) + ((_DepthOcean / node_7447) * v.normal));
+    float4 _LargeMountains_var = tex2Dlod(_LargeMountains, float4(TRANSFORM_TEX(v.texcoord0, _LargeMountains), 0.0, 0));
+    float4 _Ocean_var = tex2Dlod(_Ocean, float4(TRANSFORM_TEX(v.texcoord0, _Ocean), 0.0, 0));
+    float OceanNoise = smoothstep(0.0, 0.5, _Ocean_var.r);
+    float node_6320 = (1.0 - OceanNoise);
+    float node_7868 = (_LargeMountains_var.r - node_6320);
+    float4 _PlainHills_var = tex2Dlod(_PlainHills, float4(TRANSFORM_TEX(v.texcoord0, _PlainHills), 0.0, 0));
+    float4 _MediumDetail_var = tex2Dlod(_MediumDetail, float4(TRANSFORM_TEX(v.texcoord0, _MediumDetail), 0.0, 0));
+    v.vertex.xyz += (SyvyysKeskittaja - ((v.normal * (node_7868 * _DepthLargeMountais)) + (v.normal * ((_PlainHills_var.r - node_6320) * _DepthLowPlainHills)) + (v.normal * ((_MediumDetail_var.r - node_6320) * _DepthMed)) + (v.normal * (_Ocean_var.r * _DepthOcean))));
+}
+
+float Tessellation(TessVertex v)
+{
+    return _Tesselation;
+}
+float4 Tessellation(TessVertex v, TessVertex v1, TessVertex v2)
+{
+    float tv = Tessellation(v);
+    float tv1 = Tessellation(v1);
+    float tv2 = Tessellation(v2);
+    return float4(tv1 + tv2, tv2 + tv, tv + tv1, tv + tv1 + tv2) / float4(2, 2, 2, 3);
+}
+OutputPatchConstant hullconst(InputPatch<TessVertex, 3> v)
+{
+    OutputPatchConstant o = (OutputPatchConstant) 0;
+    float4 ts = Tessellation(v[0], v[1], v[2]);
+    o.edge[0] = ts.x;
+    o.edge[1] = ts.y;
+    o.edge[2] = ts.z;
+    o.inside = ts.w;
+    return o;
+}
+*/
