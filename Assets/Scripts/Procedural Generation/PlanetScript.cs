@@ -266,7 +266,7 @@ public class PlanetScript : MonoBehaviour {
             } else {
                 removeDistanceClose = 0;
             }
-            removeDistanceFar = (QualitySettings.CurrentLOD.distance[(i)] + QualitySettings.CurrentLOD.distance[(i-1)]*3f); // TODO: säädä näitä valueita
+            removeDistanceFar = (QualitySettings.CurrentLOD.distance[(i)] + QualitySettings.CurrentLOD.distance[(i-1)]*5f); // TODO: säädä näitä valueita
 
 			//Debug.DrawLine(myTransform.position + SphericalCubeGenerator.getLTopVerticePosition(childName) * (planetData.planetSize), player.transform.position, Color.red, 1f);
 
