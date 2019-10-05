@@ -38,8 +38,8 @@ public class Movement : MonoBehaviour {
     public float speedFromWall;
     public float floatingMovementSpeed;
 
-    // air movement
-    public bool allowMovementOnAir;
+	// air movement
+	public bool allowMovementOnAir;
     public float airAcc;
     public float maxAirMoveSpeed;
 

@@ -103,7 +103,7 @@ public static class QualitySettings {
 		// TÄÄ ON HYVÄ TÄLLÄHETKELLÄ !!!!
 		int[] lod = { 0, 1, 2, 3, 4, 5, 6 };
 		float[] distance = { 5, 2, 0.5f, 0.25f, 0.1f, 0.05f, 0 }; // Viimeinen pitää olla 0. vertaa siis aina edelliseen
-		int[] gridSize = { 8, 8, 8, 32, 128, 128, 128 };
+		int[] gridSize = { 8, 8, 8, 32, 64, 128, 128 };
 		int[] tesselation = { 1, 1, 1, 1, 1, 1, 1 };
 		bool[] hasHeight = { false, false, true, true, true, true, true };
 		bool[] hasCollider = { false, false, false, false, false, false, true };

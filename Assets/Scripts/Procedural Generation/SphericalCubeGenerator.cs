@@ -297,7 +297,7 @@ public static class SphericalCubeGenerator {
 
 
         // Create mesh data
-        public Mesh GenerateMesh() {
+        Mesh GenerateMesh() {
 
             if (side == "") { // Full
                 CreateSphericalCube();              // vertices, normals

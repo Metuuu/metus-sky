@@ -250,7 +250,6 @@ public static class GPUNoiseGenerator {
 
 	// Generate noise render texture
 	public static float[,] GenerateNoiseArrayFromRenderTexture(int seed, NoiseData noiseType) {
-
 		int resolution = (int)noiseType.resolution;
 
 		// Create new texture
@@ -413,7 +412,7 @@ public static class GPUNoiseGenerator {
 
 
 		// Noise Resolution
-		offset *= (int)noiseType.resolution;
+		offset *= resolution;
 
 		float freqMultiplier = 1;
 		switch (noiseType.resolution) {
@@ -442,7 +441,7 @@ public static class GPUNoiseGenerator {
 
 
 		// Calculate noise map
-		shader.SetFloat("resolution", (int)noiseType.resolution);
+		shader.SetFloat("resolution", resolution);
 		shader.SetFloat("zoom", zoom);
 		shader.SetFloat("Octaves", noiseType.octaves);
 		shader.SetFloat("Frequency", noiseType.frequency * freqMultiplier);
@@ -475,7 +474,8 @@ public static class GPUNoiseGenerator {
 
 
 	// Generate noise noise array
-	public static float[,] GenerateNoiseArray(int seed, NoiseData noiseType) { // TODO: right top ja back ei toimi vielä - Kehittä DepthAndTesselation Koodia
+	public static float[,] GenerateNoiseArray(int seed, NoiseData noiseType, int? meshGridSize = null) { // TODO: right top ja back ei toimi vielä - Kehittä DepthAndTesselation Koodia
+		int resolution = (int)noiseType.resolution;
 
 		// Noise type
 		ComputeShader shader;
@@ -704,7 +704,7 @@ public static class GPUNoiseGenerator {
 
 
 		// Noise Resolution
-		offset *= (int)noiseType.resolution;
+		offset *= resolution;
 
 		float freqMultiplier = 1;
 		switch (noiseType.resolution) {
@@ -733,7 +733,7 @@ public static class GPUNoiseGenerator {
 
 		
 		// Calculate noise map
-		shader.SetFloat("resolution", (int)noiseType.resolution);
+		shader.SetFloat("resolution", resolution);
 		shader.SetFloat("zoom", zoom);
 		shader.SetFloat("Octaves", noiseType.octaves);
 		shader.SetFloat("Frequency", noiseType.frequency * freqMultiplier);
@@ -751,8 +751,15 @@ public static class GPUNoiseGenerator {
 		shader.SetInt("joinRightB", joinRightB);
 		shader.SetInt("joinTop", joinTop);
 		shader.SetInt("joinTopB", joinTopB);
+		
+		if (meshGridSize == null) {
+			meshGridSize = resolution;
+		}
+		shader.SetInt("meshGridSize", (int)meshGridSize);
 
-		int size = (int)noiseType.resolution * (int)noiseType.resolution;
+
+		// FULL RESOLUTION HEIGHT MAP
+		/*int size = resolution * resolution;
 		float[] heightMapArray = new float[size];
 		ComputeBuffer buffer = new ComputeBuffer(size, sizeof(float), ComputeBufferType.Default);
 		buffer.SetData(heightMapArray);
@@ -761,7 +768,7 @@ public static class GPUNoiseGenerator {
 		int kernelIndex = shader.FindKernel("PerlinNoise" + kernelName + quarterName + "V");
 		shader.SetBuffer(kernelIndex, "buffer", buffer);
 		//shader.Dispatch(kernelIndex, size / 1024, 1, 1);
-		shader.Dispatch(kernelIndex, (int)noiseType.resolution / 32, (int)noiseType.resolution / 32, 1);
+		shader.Dispatch(kernelIndex, resolution / 32, resolution / 32, 1);
 
 		buffer.GetData(heightMapArray);
 
@@ -769,11 +776,41 @@ public static class GPUNoiseGenerator {
 		buffer.Release();
 		buffer = null;
 
-		float[,] hmArray2d = new float[(int)noiseType.resolution, (int)noiseType.resolution];
+		float[,] hmArray2d = new float[resolution, resolution];
 
-		for (int i = 0; i < (int)noiseType.resolution; ++i) {
-			for (int j = 0; j < (int)noiseType.resolution; ++j) {
-				hmArray2d[i, j] = heightMapArray[i + j * (int)noiseType.resolution];
+
+		for (int i = 0; i < resolution; ++i) {
+			for (int j = 0; j < resolution; ++j) {
+				hmArray2d[i, j] = heightMapArray[i + j * resolution];
+			}
+		}*/
+
+
+		// HEIGHT MAP FOR MESH ONLY
+		int mgs = (int)meshGridSize;
+		int size = mgs * mgs;
+		float[] heightMapArray = new float[size];
+		ComputeBuffer buffer = new ComputeBuffer(size, sizeof(float), ComputeBufferType.Default);
+		buffer.SetData(heightMapArray);
+
+		// Dispatch Shader
+		int kernelIndex = shader.FindKernel("PerlinNoise" + kernelName + quarterName + "V");
+		shader.SetBuffer(kernelIndex, "buffer", buffer);
+		//shader.Dispatch(kernelIndex, size / 1024, 1, 1);
+		shader.Dispatch(kernelIndex, mgs / 32, mgs / 32, 1);
+
+		buffer.GetData(heightMapArray);
+
+		buffer.Dispose();
+		buffer.Release();
+		buffer = null;
+
+		float[,] hmArray2d = new float[mgs, mgs];
+
+
+		for (int i = 0; i < meshGridSize; ++i) {
+			for (int j = 0; j < meshGridSize; ++j) {
+				hmArray2d[i, j] = heightMapArray[i + j * mgs];
 			}
 		}
 

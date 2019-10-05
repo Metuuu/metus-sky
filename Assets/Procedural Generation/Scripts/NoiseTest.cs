@@ -11,6 +11,7 @@ public class NoiseTest : MonoBehaviour {
 	MeshFilter mf;
 	float[,] heightMap;
 	Vector3[] originalVertices;
+	float originalScale = 0;
 
 	[SerializeField] int noisePerformanceTestLoopTimes = 1;
 	[SerializeField] Noise.NoiseSource noiseSource;
@@ -25,6 +26,7 @@ public class NoiseTest : MonoBehaviour {
 
 	[SerializeField] float noiseScale = 10;
 	[SerializeField] GPUNoiseGenerator.NoiseResolution noiseResolution = GPUNoiseGenerator.NoiseResolution.LOW;
+	[SerializeField] bool useRenderTextureForDrawingTexture = true;
 
 	[SerializeField] GPUNoiseGenerator.Side side = GPUNoiseGenerator.Side.Bottom;
 	[SerializeField] string quarter = "";
@@ -55,17 +57,27 @@ public class NoiseTest : MonoBehaviour {
 	void Start() {
 		planeRenderer = gameObject.GetComponent<Renderer>();
 		mf = gameObject.GetComponent<MeshFilter>();
+
+		originalScale = transform.localScale.x;
+		SetMeshGrid((int)noiseResolution, true);
 		originalVertices = (Vector3[])mf.mesh.vertices.Clone();
+
 	}
 
 	// - Update -
 	void Update() {
 		if (Input.GetKeyDown(KeyCode.Space) || (autoUdpate && (noisePerformanceTestLoopTimes != lastNoisePerformanceTestLoopTimes || noiseSource != lastNoiseSource || seed != lastSeed || octaves != lastOctaves || frequency != lastFrequency || amplitude != lastAmplitude || persistance != lastPersistance || lacunarity != lastLacunarity || maxNoiseHeight != lastMaxNoiseHeight || offset != lastOffset || noiseScale != lastNoiseScale || noiseResolution != lastNoiseResolution || side != lastSide || quarter != lastQuarter || enableHeight != lastEnableHeight))) {
 
-			if (noiseSource != Noise.NoiseSource.GPU_RenderTexture)
+			if (noiseSource != Noise.NoiseSource.GPU_RenderTexture) {
 				DrawNoiseToPlane();
-			else
+			} else {
 				DrawNoiseToPlaneGPURenderTexture();
+			}
+
+			if (lastNoiseResolution != noiseResolution) {
+				SetMeshGrid((int)noiseResolution);
+				originalVertices = (Vector3[])mf.mesh.vertices.Clone();
+			}
 
 			if (enableHeight)
 				AddHeightToPlane();
@@ -91,12 +103,13 @@ public class NoiseTest : MonoBehaviour {
 	}
 
 	void OnDestroy() {
-		if (rt != null) rt.Release();
+		if (rt != null)
+			rt.Release();
 	}
 
 
-    // Draw noisemap to the plane
-    void DrawNoiseToPlane() {
+	// Draw noisemap to the plane
+	void DrawNoiseToPlane() {
 		GPUNoiseGenerator.NoiseData noiseData = new GPUNoiseGenerator.NoiseData {
 			frequency = frequency,
 			octaves = octaves,
@@ -109,10 +122,16 @@ public class NoiseTest : MonoBehaviour {
 			resolution = noiseResolution
 		};
 
-		heightMap = Noise.GenerateNoiseMap(seed, offset, noiseData, noiseScale, noiseSource, noisePerformanceTestLoopTimes);
-		Texture2D noiseTexture = TextureGenerator.TextureFromHeightMap(heightMap);
-        planeRenderer.material.mainTexture = noiseTexture;
-    }
+		heightMap = Noise.GenerateNoiseMap(seed, offset, noiseData, noiseScale, noiseSource, (int)noiseResolution, noisePerformanceTestLoopTimes);
+
+		if (!useRenderTextureForDrawingTexture) {
+			Texture2D noiseTexture = TextureGenerator.TextureFromHeightMap(heightMap);
+			planeRenderer.material.mainTexture = noiseTexture;
+		} else {
+			rt = GPUNoiseGenerator.GenerateNoise(seed, noiseData);
+			planeRenderer.material.mainTexture = rt;
+		}
+	}
 
 	void DrawNoiseToPlaneGPURenderTexture() {
 		System.Diagnostics.Stopwatch st = new System.Diagnostics.Stopwatch();
@@ -129,12 +148,14 @@ public class NoiseTest : MonoBehaviour {
 				amplitude = amplitude,
 				resolution = noiseResolution
 			};
-			if (rt != null) rt.Release();
+			if (rt != null)
+				rt.Release();
 			rt = GPUNoiseGenerator.GenerateNoise(seed, noiseData);
 		}
 		st.Stop();
-		if (noisePerformanceTestLoopTimes != 1) Debug.Log(string.Format("Generated noise with {0} {1} times and it took {2} ms to complete.", noiseSource.ToString(), noisePerformanceTestLoopTimes, st.ElapsedMilliseconds));
-		
+		if (noisePerformanceTestLoopTimes != 1)
+			Debug.Log(string.Format("Generated noise with {0} {1} times and it took {2} ms to complete.", noiseSource.ToString(), noisePerformanceTestLoopTimes, st.ElapsedMilliseconds));
+
 		planeRenderer.material.mainTexture = rt;
 	}
 
@@ -149,14 +170,14 @@ public class NoiseTest : MonoBehaviour {
 		Vector3[] newVertices = new Vector3[verticesCount];
 
 		int resolution = heightMap.GetLength(0);
-		float hmPosMultiplier = (float)(resolution-1) / ((float)(verticesWidth-1));
+		float hmPosMultiplier = (float)(resolution - 1) / (float)(verticesWidth - 1);
 
 		/*Debug.Log("------ res, vetices, hmposmulti ------");
 		Debug.Log(resolution);
 		Debug.Log(verticesWidth);
 		Debug.Log(hmPosMultiplier);*/
 		//Debug.Log("------ " + gameObject.name + " ------");
-		
+
 		for (int x = 0; x < verticesWidth; ++x) {
 			for (int y = 0; y < verticesWidth; ++y) {
 				/*if (y == 0 && x == 0) {
@@ -189,7 +210,7 @@ public class NoiseTest : MonoBehaviour {
 				//Debug.Log((int)(x * hmPosMultiplier));
 				//Debug.Log(Mathf.RoundToInt((float)y * hmPosMultiplier));
 				//newVertices[x + y * verticesWidth] = (vertices[x + y * verticesWidth] + new Vector3(1f, 1f, Random.Range(-1.0f, 2.0f)));
-				newVertices[x + y * verticesWidth] = vertices[x + y * verticesWidth] + (new Vector3(0,1,0) * (heightMap[Mathf.RoundToInt(x * hmPosMultiplier), Mathf.RoundToInt(y * hmPosMultiplier)] / 1f));
+				newVertices[x + y * verticesWidth] = vertices[x + y * verticesWidth] + (new Vector3(0, 0, -1) * (heightMap[Mathf.RoundToInt(x * hmPosMultiplier), Mathf.RoundToInt(y * hmPosMultiplier)] / 1f));
 				//newVertices[x + y * verticesWidth] = vertices[x + y * verticesWidth];
 			}
 		}
@@ -198,6 +219,46 @@ public class NoiseTest : MonoBehaviour {
 
 	void ClearPlaneHeight() {
 		mf.mesh.vertices = (Vector3[])originalVertices.Clone();
+	}
+
+
+
+
+	private void SetMeshGrid(int gridSize, bool fixTransform = false) {
+		Mesh mesh = mesh = new Mesh();
+		mesh.name = "Procedural Grid";
+
+		Vector3[] vertices = new Vector3[(gridSize + 1) * (gridSize + 1)];
+		//Vector3[] normals = new Vector3[(gridSize + 1) * (gridSize + 1)];
+		Vector2[] uv = new Vector2[vertices.Length];
+		for (int i = 0, y = 0; y <= gridSize; y++) {
+			for (int x = 0; x <= gridSize; x++, i++) {
+				vertices[i] = new Vector3(x, y);
+				//normals[i] = vertices[i].normalized;
+				uv[i] = new Vector2((float)x / gridSize, (float)y / gridSize);
+			}
+		}
+		mesh.vertices = vertices;
+		mesh.uv = uv;
+
+		int[] triangles = new int[gridSize * gridSize * 6];
+		for (int ti = 0, vi = 0, y = 0; y < gridSize; y++, vi++) {
+			for (int x = 0; x < gridSize; x++, ti += 6, vi++) {
+				triangles[ti] = vi;
+				triangles[ti + 3] = triangles[ti + 2] = vi + 1;
+				triangles[ti + 4] = triangles[ti + 1] = vi + gridSize + 1;
+				triangles[ti + 5] = vi + gridSize + 2;
+			}
+		}
+		mesh.triangles = triangles;
+		//mesh.normals = normals;
+		mf.mesh = mesh;
+
+		if (fixTransform) {
+			transform.Rotate(90, 0, 0);
+			transform.position += new Vector3(10, 0, 10);
+		}
+		transform.localScale = new Vector3(originalScale * -(10f / gridSize), originalScale * -(10f / gridSize), 1);
 	}
 
 }

@@ -86,6 +86,8 @@ int joinRightB;
 int joinTop;
 int joinTopB;
 
+int meshGridSize;
+
 //int joinArr[] = {
 //	joinBottom,
 //	joinBottomB,
@@ -285,7 +287,7 @@ float3 LeftOffset() {
 	return float3(resolution-1, Offset.y, Offset.z);
 }
 float3 LeftJRightB() {
-	return float3(-1, 0, 0);
+	return float3(0, 0, 0);
 }
 float3 LeftJRight() {
 	return float3(0, 0, -1);
@@ -312,7 +314,7 @@ float3 frontJBottom() {
 	return float3(0, 1, 0);
 }
 float3 frontJBottomB() {
-	return float3(0, 1, 0);
+	return float3(0, 0, 0);
 }
 float3 frontJRight() {
 	return float3(-1, 0, 0);
@@ -412,65 +414,67 @@ float3 BackJBottom() {
 // --
 
 
-[numthreads(32, 32, 1)] // BOTTOM
+// BOTTOM
+float3 getBottomPosition(uint2 id, int posMultiplier) {
+	int x = id.x * posMultiplier;
+	int y = id.y * posMultiplier;
+	float3 R = Join(joinRight, BottomJRight(), x);
+	float3 B = Join(joinBottom, BottomJBottom(), y);
+	return BottomXPos(x) + BottomYPos(y) + BottomOffset() + R + B;
+}
+[numthreads(32, 32, 1)]
 void PerlinNoiseBottomV(uint2 id : SV_DispatchThreadID)
 {
 	uint structs;
 	uint stride;
 
-	float x = id.x;
-	float y = id.y;
-
-	float3 R = Join(joinRight, BottomJRight(), x);
-	float3 B = Join(joinBottom, BottomJBottom(), y);
-
-	float3 position = BottomXPos(x) + BottomYPos(y) + BottomOffset() + R + B;
+	float3 position = getBottomPosition(id, resolution / meshGridSize);
 
 	buffer.GetDimensions(structs, stride);
-
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-
 }
 
-[numthreads(32, 32, 1)] // LEFT
+
+// LEFT
+float3 getLeftPosition(uint2 id, int posMultiplier) {
+	int x = id.x * posMultiplier;
+	int y = id.y * posMultiplier;
+	float3 R = Join(joinRight, LeftJRight(), x);
+	float3 RB = Join(joinRightB, LeftJRightB(), x);
+	float3 B = Join(joinBottom, LeftJBottom(), y);
+	float3 BB = Join(joinBottomB, LeftJBottomB(), y);
+	return LeftXPos(x) + LeftYPos(y) + LeftOffset() + R + RB + B + BB;
+}
+[numthreads(32, 32, 1)]
 void PerlinNoiseLeftV(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
     uint stride;
 
-	float x = id.x;
-	float y = id.y;
-
-	float3 R = Join(joinRight, LeftJRight(), x);
-	float3 RB = Join(joinRightB, LeftJRightB(), x);
-	float3 B = Join(joinBottom, LeftJBottom(), y);
-	float3 BB = Join(joinBottomB, LeftJBottomB(), y);
-
-	float3 position = LeftXPos(x) + LeftYPos(y) + LeftOffset() + R + RB + B + BB;
-
-	/*float3 R = joinRight * floor(((LeftJRight() - 1) * -0.5 * (resolution - 1) + X * LeftJRight()) / (resolution - 1)) * LeftJRight();
-	float3 LB = joinRightB * floor(((LeftJRightB() - 1) * -0.5 * (resolution - 1) + X * LeftJRightB()) / (resolution - 1)) * LeftJRightB();
-	float3 B = joinBottom * floor(((LeftJBottom() - 1) * -0.5 * (resolution - 1) + Y * LeftJBottom()) / (resolution - 1)) * LeftJBottom();
-	float3 BB = joinBottomB * floor(((LeftJBottomB() - 1) * -0.5 * (resolution - 1) + Y * LeftJBottomB()) / (resolution - 1)) * LeftJBottomB();*/
+	float3 position = getLeftPosition(id, resolution / meshGridSize);
 
 	buffer.GetDimensions(structs, stride);
-
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-
-	/*int ylis = floor((id.y + 1) / resolution);
-	int xlis = floor((resolution-1-id.x) / (resolution-1+ylis));
-    buffer.GetDimensions(structs, stride);
-    buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(-xlis - ylis, id.y + Offset.y + ylis, id.x + Offset.z), Octaves, float3(resolution, 0, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);*/
 }
 
-[numthreads(32, 32, 1)] // FRONT - ok
+
+// FRONT
+float3 getFrontPosition(uint2 id, int posMultiplier) {
+	int x = id.x * posMultiplier;
+	int y = id.y * posMultiplier;
+	float3 rj = Join(joinRight, frontJRight(), x);
+	float3 bj = Join(joinBottom, frontJBottom(), y);
+	float3 bjB = Join(joinBottomB, frontJBottomB(), y);
+	return FrontXPos(x) + FrontYPos(y) + FrontOffset() + rj + bj + bjB;
+}
+[numthreads(32, 32, 1)]
 void PerlinNoiseFrontV(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
     uint stride;
 
-	/*float3 X = FrontX(id);
-	float3 Y = FrontY(id);*/
+	//float3 X = FrontX(id);
+	//float3 Y = FrontY(id);
 
 	// jos frontRightJ = miinus pitää (resolution - 1) olla olemassa
 	//1 + 1 = 2;
@@ -479,23 +483,12 @@ void PerlinNoiseFrontV(uint2 id : SV_DispatchThreadID)
 	// 1 - 1 = 0
 	// -1 - 1 = -2 
 	//(frontJRight() - 1) * -0.5 = 1
-
-	float x = id.x;
-	float y = id.y;
-	float3 rj = Join(joinRight, frontJRight(), x);
-	float3 bj = Join(joinBottom, frontJBottom(), y);
-	float3 bjB = Join(joinBottomB, frontJBottomB(), y);
-
-	float3 position = FrontXPos(x) + FrontYPos(y) + FrontOffset() + rj + bj + bjB;
+	
 
 	//float3 rj = joinRight * floor(((frontJRight() - 1) * -0.5 * (resolution - 1) + X * frontJRight()) / (resolution - 1)) * frontJRight();
 	//float3 bj = joinBottom * floor(((frontJBottom() - 1) * -0.5 * (resolution - 1) + Y * frontJBottom()) / (resolution - 1)) * frontJBottom();
 	//float3 bjB = joinBottomB * floor(((frontJBottomB() - 1) * -0.5 * (resolution - 1) + Y * frontJBottomB()) / (resolution - 1)) * frontJBottomB();
 	
-	buffer.GetDimensions(structs, stride);
-
-	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-
 
 	//int bj = joinBottom * floor(id.y / (resolution - 1));
 	//int bjB = joinBottomB * floor(id.y / (resolution - 1));
@@ -503,113 +496,79 @@ void PerlinNoiseFrontV(uint2 id : SV_DispatchThreadID)
 
 	//buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(id.x + Offset.x - rj, id.y + Offset.y + bj + bjB, 0), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 
+	float3 position = getFrontPosition(id, resolution / meshGridSize);
+	buffer.GetDimensions(structs, stride);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
 
-[numthreads(32, 32, 1)] // RIGHT
+// RIGHT
+float3 getRightPosition(uint2 id, int posMultiplier) {
+	int x = resolution - id.x * posMultiplier - 1;
+	int y = id.y * posMultiplier;
+	float3 R = Join(joinRight, RightJRight(), x);
+	float3 LB = Join(joinLeftB, RightJLeftB(), x);
+	float3 B = Join(joinBottom, RightJBottom(), y);
+	float3 BB = Join(joinBottomB, RightJBottomB(), y);
+	return RightXPos(x) + RightYPos(y) + RightOffset() + R + LB + B + BB;
+}
+[numthreads(32, 32, 1)]
 void PerlinNoiseRightV(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
     uint stride;
 
-	//float3 X = RightX(id);
-	//float3 Y = RightY(id);
-
-	//int ylis = floor((id.y + 1) / resolution);
-	//int zlis = floor((id.x + 1) / (resolution + ylis));
-
-	/*float3 R = joinRight * floor(((RightJRight() - 1) * -0.5 * (resolution - 1) + X * RightJRight()) / (resolution - 1)) * RightJRight();
-	float3 LB = joinLeftB * floor(((RightJLeftB() - 1) * -0.5 * (resolution - 1) + X * RightJLeftB()) / (resolution - 1)) * RightJLeftB();
-	float3 B = joinBottom * floor(((RightJBottom() - 1) * -0.5 * (resolution - 1) + Y * RightJBottom()) / (resolution - 1)) * RightJBottom();
-	float3 BB = joinBottomB * floor(((RightJBottomB() - 1) * -0.5 * (resolution - 1) + Y * RightJBottomB()) / (resolution - 1)) * RightJBottomB();
-	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(X + Y + RightOffset() + R + LB + B + BB, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);*/
-
-
-	float x = resolution - id.x - 1;
-	float y = id.y;
-	float3 R = Join(joinRight, RightJRight(), x);
-	float3 LB = Join(joinLeftB, RightJLeftB(), x);
-	float3 B = Join(joinBottom, RightJBottom(), y);
-	float3 BB = Join(joinBottomB, RightJBottomB(), y);
-
-	float3 position = RightXPos(x) + RightYPos(y) + RightOffset() + R + LB + B + BB;
+	float3 position = getRightPosition(id, resolution / meshGridSize);
 
 	buffer.GetDimensions(structs, stride);
-
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-
-	//buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(0, id.y + Offset.y + ylis, resolution - id.x + Offset.z - zlis - ylis), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
-[numthreads(32, 32, 1)] // TOP
-void PerlinNoiseTopV(uint2 id : SV_DispatchThreadID)
-{
-    uint structs;
-    uint stride;
 
-	/*int jlis = floor((resolution - 1 - id.x) / (resolution - 1));
-	int zlis = floor((id.y + 1) / resolution);
-	int xlis = floor((id.x + 1) / (resolution + zlis));
-	int ylis = floor((resolution - 1 - id.y) / (resolution - 1 + xlis + jlis));
-    buffer.GetDimensions(structs, stride);
-    buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(id.x + Offset.x + xlis, ylis, resolution - id.y + Offset.z - xlis - zlis), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);*/
-
-	float x = id.x;
-	float y = resolution - id.y - 1;
+// TOP
+float3 getTopPosition(uint2 id, int posMultiplier) {
+	int x = id.x * posMultiplier;
+	int y = resolution - id.y * posMultiplier - 1;
 	float3 TB = Join(joinTopB, TopJTopB(), y);
 	float3 R = Join(joinRight, TopJRight(), x);
 	float3 RB = Join(joinRightB, TopJRightB(), x);
 	float3 LB = Join(joinLeftB, TopJLeftB(), x);
 	float3 B = Join(joinBottom, TopJBottom(), y);
 	float3 BB = Join(joinBottomB, TopJBottomB(), y);
+	return x * TopXPos() + y * TopYPos() + TopOffset() + TB + R + RB + LB + B + BB;
+}
+[numthreads(32, 32, 1)]
+void PerlinNoiseTopV(uint2 id : SV_DispatchThreadID)
+{
+    uint structs;
+    uint stride;
 
-	float3 position = x * TopXPos() + y * TopYPos() + TopOffset() + TB + R + RB + LB + B + BB;
+	float3 position = getTopPosition(id, resolution / meshGridSize);
 
 	buffer.GetDimensions(structs, stride);
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
-[numthreads(32, 32, 1)] // BACK
+
+// BACK
+float3 getBackPosition(uint2 id, int posMultiplier) {
+	int x = id.x * posMultiplier;
+	int y = resolution - id.y * posMultiplier - 1;
+	float3 TB = Join(joinTopB, BackJTopB(), y);
+	float3 R = Join(joinRight, BackJRight(), x);
+	float3 RB = Join(joinRightB, BackJRightB(), x);
+	float3 LB = Join(joinLeftB, BackJLeftB(), x);
+	float3 B = Join(joinBottom, BackJBottom(), y);
+	return x * BackXPos() + y * BackYPos() + BackOffset() + TB + R + RB + LB + B;
+}
+[numthreads(32, 32, 1)]
 void PerlinNoiseBackV(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
     uint stride;
-	int xlis = floor((resolution - 1 - id.y) / (resolution - 1));
-	int ylis = floor((resolution - 1 - id.x) / (resolution - 1 + xlis));
-	int zlis = floor((id.x + 1) / (resolution + xlis + ylis));
 
-
-
-	float y = resolution - id.y - 1;
-	float3 TB = Join(joinTopB, BackJTopB(), y);
-	float3 R = Join(joinRight, BackJRight(), id.x);
-	float3 RB = Join(joinRightB, BackJRightB(), id.x);
-	float3 LB = Join(joinLeftB, BackJLeftB(), id.x);
-	float3 B = Join(joinBottom, BackJBottom(), y);
-
-	float3 position = id.x * BackXPos() + y * BackYPos() + BackOffset() + TB + R + RB + LB + B;
+	float3 position = getBackPosition(id, resolution / meshGridSize);
 
 	buffer.GetDimensions(structs, stride);
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-    //buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(id.x + Offset.x + zlis, resolution - id.y + Offset.y - ylis - zlis, -xlis - zlis), Octaves, float3(0, 0, resolution), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
-
-
-//float3 moveFront(x, y) {
-//	return float3(x, y, 0);
-//}
-//float3 moveRight(x, y) {
-//	return float3(0, y, x);
-//}
-//float3 moveLeft(uint2 id) {
-//	
-//
-//	joinBottom
-//
-//	int ylis = floor((id.y + 1) / resolution);
-//	int xlis = floor((resolution - 1 - id.x) / (resolution - 1 + ylis));
-//
-//	return float3(- xlis - ylis, ylis, 0)
-//
-//	return float3(0, y, x)
-//}
