@@ -36,7 +36,7 @@ public class PlanetScript : MonoBehaviour {
     LodObject lodObj;
     string childName;
     int childArrayIndex;
-    Vector3 localPosition;
+    Vector3 localPositionM;
     float removeDistanceClose;
     float removeDistanceFar;
     List<RenderTexture> renderTextures;
@@ -164,8 +164,6 @@ public class PlanetScript : MonoBehaviour {
 
 
 		// Hillitön LOD koodi
-		bool breakkaa = false; // breakkaa variable hoitelee, ettei looppaa turhaan pitemmälle mitä pitäis
-
         for (int i = 0; i < lodsCount; ++i) {
 
             if (QualitySettings.CurrentLOD.lodSide[i] == QualitySettings.LODSide.Quarter) { return; } // Jos on quarter niin lopettaa tähän koska !! kattoo quarterit sivujen ja quarterejen sisällä rekursiivisesti !!
@@ -178,7 +176,7 @@ public class PlanetScript : MonoBehaviour {
                 // - Planeetta kokonaisena -
                 case QualitySettings.LODSide.Full:
 
-                    localPosition = Vector3.zero;
+                    localPositionM = Vector3.zero;
 
                     childName = "F" + QualitySettings.CurrentLOD.lod[i].ToString();
                     childArrayIndex = getArrayPosition(childName);
@@ -187,7 +185,7 @@ public class PlanetScript : MonoBehaviour {
                     // Jos on seuraavasta lodista kauempana niin aktivoi ittensä
                     if (!nextLod || Vector3.Distance(player.position, myTransform.position) >= QualitySettings.CurrentLOD.distance[i] * planetData.planetSize) {
                         if (lodObj == null) { // Jos objektia ei ole niin generoi sen
-                            lodObj = new LodObject(childName, planetData.GeneratePlanetChunk(QualitySettings.CurrentLOD.gridSize[i], myTransform.position, ref renderTextures, QualitySettings.CurrentLOD.hasHeight[i], QualitySettings.CurrentLOD.hasCollider[i], childName), localPosition, 0, removeDistanceFar, QualitySettings.LODSide.Full, renderTextures);
+                            lodObj = new LodObject(childName, planetData.GeneratePlanetChunk(QualitySettings.CurrentLOD.gridSize[i], myTransform.position, ref renderTextures, QualitySettings.CurrentLOD.hasHeight[i], QualitySettings.CurrentLOD.hasCollider[i], childName), localPositionM, 0, removeDistanceFar, QualitySettings.LODSide.Full, renderTextures);
                             lodObj.GameObj.transform.parent = myTransform;
                             allChildObjs[childArrayIndex] = lodObj;
                             lodObjects.Add(lodObj);
@@ -207,7 +205,7 @@ public class PlanetScript : MonoBehaviour {
                         childArrayIndex = getArrayPosition(childName);
                         lodObj = allChildObjs[childArrayIndex];
 
-                        localPosition = sidePositions[side];
+                        localPositionM = sidePositions[side];
                         if (QualitySettings.CurrentLOD.LodsCount > (i + 1)) {
                             removeDistanceClose = (QualitySettings.CurrentLOD.distance[(i)] - QualitySettings.CurrentLOD.distance[(i + 1)]);
                         } else {
@@ -219,7 +217,7 @@ public class PlanetScript : MonoBehaviour {
                         if (!nextLod || Vector3.Distance(player.position, myTransform.position + sidePositions[side]) >= QualitySettings.CurrentLOD.distance[i] * planetData.planetSize) {
 
                             if (lodObj == null || lodObj.GameObj == null) { // Jos objektia ei ole niin generoi sen
-                                lodObj = new LodObject(childName, planetData.GeneratePlanetChunk(QualitySettings.CurrentLOD.gridSize[i], myTransform.position, ref renderTextures, QualitySettings.CurrentLOD.hasHeight[i], QualitySettings.CurrentLOD.hasCollider[i], childName), localPosition, removeDistanceClose, removeDistanceFar, QualitySettings.LODSide.Side, renderTextures);
+                                lodObj = new LodObject(childName, planetData.GeneratePlanetChunk(QualitySettings.CurrentLOD.gridSize[i], myTransform.position, ref renderTextures, QualitySettings.CurrentLOD.hasHeight[i], QualitySettings.CurrentLOD.hasCollider[i], childName), localPositionM, removeDistanceClose, removeDistanceFar, QualitySettings.LODSide.Side, renderTextures);
                                 lodObj.GameObj.transform.parent = myTransform;
                                 allChildObjs[childArrayIndex] = lodObj;
                                 lodObjects.Add(lodObj);
@@ -253,7 +251,7 @@ public class PlanetScript : MonoBehaviour {
     void LODQuarters(string side, int lodIndex) {
         
         int i = lodIndex;
-        bool nextLod = (i != lodsCount); // onko seuraavan tason lod tarkkuutta olemassa
+        bool nextLod = (i != lodsCount-1); // onko seuraavan tason lod tarkkuutta olemassa
             
         // Looppaa jokaisen neljäsosan läpi
         for (int quarter = 0; quarter < 4; ++quarter) {
@@ -261,19 +259,28 @@ public class PlanetScript : MonoBehaviour {
             childArrayIndex = getArrayPosition(childName);
             lodObj = allChildObjs[childArrayIndex];
 
-            localPosition = SphericalCubeGenerator.getMiddleVerticePosition(childName) * (planetData.planetSize);
-            if (QualitySettings.CurrentLOD.LodsCount > (i + 1)) {
+			localPositionM = SphericalCubeGenerator.getMiddleVerticePosition(childName) * (planetData.planetSize);
+
+			if (QualitySettings.CurrentLOD.LodsCount > (i + 1)) {
                 removeDistanceClose = (QualitySettings.CurrentLOD.distance[(i + 1)]); // TODO: säädä näitä valueita
             } else {
                 removeDistanceClose = 0;
             }
-            removeDistanceFar = (QualitySettings.CurrentLOD.distance[(i)] + QualitySettings.CurrentLOD.distance[(i-1)]*2); // TODO: säädä näitä valueita
+            removeDistanceFar = (QualitySettings.CurrentLOD.distance[(i)] + QualitySettings.CurrentLOD.distance[(i-1)]*3f); // TODO: säädä näitä valueita
 
+			//Debug.DrawLine(myTransform.position + SphericalCubeGenerator.getLTopVerticePosition(childName) * (planetData.planetSize), player.transform.position, Color.red, 1f);
 
-            if (!nextLod || Vector3.Distance(myTransform.position + localPosition, player.transform.position) >= QualitySettings.CurrentLOD.distance[i] * planetData.planetSize) { // Jos on seuraavasta lodista kauempana niin aktivoi ittensä
+			if (!nextLod
+				|| (
+					Vector3.Distance(myTransform.position + localPositionM, player.transform.position) >= QualitySettings.CurrentLOD.distance[i] * planetData.planetSize // Middle
+					&& Vector3.Distance(myTransform.position + SphericalCubeGenerator.getLBottomVerticePosition(childName) * (planetData.planetSize), player.transform.position) >= QualitySettings.CurrentLOD.distance[i] * planetData.planetSize // Left Bottom
+					&& Vector3.Distance(myTransform.position + SphericalCubeGenerator.getRBottomVerticePosition(childName) * (planetData.planetSize), player.transform.position) >= QualitySettings.CurrentLOD.distance[i] * planetData.planetSize // Right Bottom
+					&& Vector3.Distance(myTransform.position + SphericalCubeGenerator.getLTopVerticePosition(childName) * (planetData.planetSize), player.transform.position) >= QualitySettings.CurrentLOD.distance[i] * planetData.planetSize // Left Top
+					&& Vector3.Distance(myTransform.position + SphericalCubeGenerator.getRTopVerticePosition(childName) * (planetData.planetSize), player.transform.position) >= QualitySettings.CurrentLOD.distance[i] * planetData.planetSize // Right Top
+				)) { // Jos on seuraavasta lodista kauempana niin aktivoi ittensä
 
                 if (lodObj == null || lodObj.GameObj == null) { // Jos objektia ei ole niin generoi sen
-                    lodObj = new LodObject(childName, planetData.GeneratePlanetChunk(QualitySettings.CurrentLOD.gridSize[i], myTransform.position, ref renderTextures, QualitySettings.CurrentLOD.hasHeight[i], QualitySettings.CurrentLOD.hasCollider[i], childName), localPosition, removeDistanceClose, removeDistanceFar, QualitySettings.LODSide.Quarter, renderTextures);
+                    lodObj = new LodObject(childName, planetData.GeneratePlanetChunk(QualitySettings.CurrentLOD.gridSize[i], myTransform.position, ref renderTextures, QualitySettings.CurrentLOD.hasHeight[i], QualitySettings.CurrentLOD.hasCollider[i], childName), localPositionM, removeDistanceClose, removeDistanceFar, QualitySettings.LODSide.Quarter, renderTextures);
                     lodObj.GameObj.transform.parent = myTransform;
                     allChildObjs[childArrayIndex] = lodObj;
                     lodObjects.Add(lodObj);

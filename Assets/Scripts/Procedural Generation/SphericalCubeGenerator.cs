@@ -55,16 +55,32 @@ public static class SphericalCubeGenerator {
     }
 
 
-    // Get Middle Vertice Position
-    public static Vector3 getMiddleVerticePosition(string side) {
-        int pos = getArrayPosition(side);
-        return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[sideMeshes[pos].vertexCount / 2];
-    }
+	// Get Middle Vertice Position
+	public static Vector3 getMiddleVerticePosition(string side) {
+		int pos = getArrayPosition(side);
+		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[sideMeshes[pos].vertexCount / 2];
+	}
+	public static Vector3 getLBottomVerticePosition(string side) {
+		int pos = getArrayPosition(side);
+		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[0];
+	}
+	public static Vector3 getRBottomVerticePosition(string side) {
+		int pos = getArrayPosition(side);
+		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[(int)Mathf.Sqrt(sideMeshes[pos].vertexCount - 1)];
+	}
+	public static Vector3 getLTopVerticePosition(string side) {
+		int pos = getArrayPosition(side);
+		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[(sideMeshes[pos].vertexCount-1) - (int)Mathf.Sqrt(sideMeshes[pos].vertexCount-1)];
+	}
+	public static Vector3 getRTopVerticePosition(string side) {
+		int pos = getArrayPosition(side);
+		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[sideMeshes[pos].vertexCount-1];
+	}
 
 
 
-    // Generate All Mesh Data Recursively
-    static void GenerateAllMeshDataRecursively(int quarterQualityLevels, int currentLevel, string side) {
+	// Generate All Mesh Data Recursively
+	static void GenerateAllMeshDataRecursively(int quarterQualityLevels, int currentLevel, string side) {
         if (QualitySettings.CurrentLOD.lodSide[currentLevel] == QualitySettings.LODSide.Quarter) {
             for (int i = 0; i < 4; ++i) {
                 if (currentLevel != quarterQualityLevels - 1) {
