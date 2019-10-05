@@ -69,7 +69,10 @@ public class GravityBody : MonoBehaviour {
         if (closestPlanet == null) { return; }
 
 		//closestPlanetRadius = closestPlanet.GetComponent<PlanetScript>().planetData.radius;
-		closestPlanetRadius = closestPlanet.GetComponent<PlanetTestScript>().radius;
+		PlanetTestScript planetScript = closestPlanet.GetComponent<PlanetTestScript>();
+		if (planetScript == null) { return; }
+
+		closestPlanetRadius = planetScript.radius;
 
 		distanceToClosestPlanet = Vector3.Distance(transform.position, closestPlanet.transform.position);
         distanceToClosestPlanetSurface = Vector3.Distance(transform.position, closestPlanet.transform.position) - closestPlanetRadius;
@@ -145,6 +148,7 @@ public class GravityBody : MonoBehaviour {
         Transform pTransform = planet.transform;
 		//PlanetTestScript planetScript = planet.GetComponent<PlanetTestScript>();
 		PlanetTestScript planetScript = planet.GetComponent<PlanetTestScript>();
+		if (planetScript == null) { return 0; }
 		//PlanetScript planetScript = planet.GetComponent<PlanetScript>();
 		float distance = Vector3.Distance(pTransform.position, transform.position)-radius;
         return ((gravitationalConstant * planetScript.mass * Mathf.Pow(10, planetScript.mass10pow)) / (distance*distance));
