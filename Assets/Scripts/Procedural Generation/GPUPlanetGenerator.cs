@@ -155,6 +155,7 @@ public class GPUPlanetData {
 
 			materials = new Material[1];
 			materials[0] = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
+			//materials[0] = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
 
 			//materials[0] = new Material(Shader.Find("Shader Forge/Terrain"));
 
