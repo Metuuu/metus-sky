@@ -34,15 +34,16 @@ public class GPUPlanetData {
 
 
 	// Material texture names
-	private static readonly string OCEAN_BOTTOM_TEXTURE_NAME = "_OceanBottomTexture";
-	private static readonly string DEFAULT_GROUND_TEXTURE_NAME = "_DefaultGroundTexture";
-	private static readonly string MOUNTAINS_TEXTURE_NAME = "_MountainsTexture";
-	private static readonly string MOUNTAIN_TOP_TEXTURE_NAME = "_MountainTopTexture";
+	private static readonly string OCEAN_BOTTOM_TEXTURE_NAME = "TEX_Sand";
+	private static readonly string DEFAULT_GROUND_TEXTURE_NAME = "TEX_Grass";
+	private static readonly string CLIFFS_TEXTURE_NAME = "TEX_Cliff";
+	private static readonly string MOUNTAINS_TEXTURE_NAME = "TEX_Stone";
+	private static readonly string MOUNTAIN_TOP_TEXTURE_NAME = "TEX_Snow";
 
-	private static readonly string OCEAN_NOISE_TEXTURE_NAME = "_Ocean";
-	private static readonly string PLAIN_HILLS_NOISE_TEXTURE_NAME = "_PlainHills";
-	private static readonly string LARGE_MOUNTAINS_NOISE_TEXTURE_NAME = "_LargeMountains";
-	private static readonly string MEDIUM_DETAIL_NOISE_TEXTURE_NAME = "_MediumDetail";
+	private static readonly string OCEAN_NOISE_TEXTURE_NAME = "HM_Ocean";
+	private static readonly string PLAIN_HILLS_NOISE_TEXTURE_NAME = "HM_Plain_Hills";
+	private static readonly string LARGE_MOUNTAINS_NOISE_TEXTURE_NAME = "HM_Large_Mountains";
+	private static readonly string MEDIUM_DETAIL_NOISE_TEXTURE_NAME = "HM_MediumDetail";
 
 
 
@@ -153,7 +154,7 @@ public class GPUPlanetData {
 			chunkMesh = GenerateSphericalMesh(Mathf.RoundToInt(gridSize), side); // generoi spherical meshen
 
 			materials = new Material[1];
-			materials[0] = new Material(Shader.Find("Legacy Shaders/Diffuse"));
+			materials[0] = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
 
 			//materials[0] = new Material(Shader.Find("Shader Forge/Terrain"));
 
@@ -232,23 +233,23 @@ public class GPUPlanetData {
 			//heightMaps = new float[][,] { oceanHeightMap, plainHillsHeightMap, largeMountainsHeightMap, mediumDetailHeightMap };
 			heightMaps = new float[][,] { oceanHeightMap, plainHillsHeightMap, largeMountainsHeightMap };
 
-			//RenderTexture oceanTex = GPUNoiseGenerator.GenerateNoise(seed, ocean);
-			//RenderTexture plainHillsTex = GPUNoiseGenerator.GenerateNoise(seed, plainHills);
-			//RenderTexture largeMountainsTex = GPUNoiseGenerator.GenerateNoise(seed, largeMountains);
-			//RenderTexture mediumDetailTex = GPUNoiseGenerator.GenerateNoise(seed, mediumDetail);
-			//materials[0].SetTexture(OCEAN_NOISE_TEXTURE_NAME, oceanTex);
-			//materials[0].SetTexture(PLAIN_HILLS_NOISE_TEXTURE_NAME, plainHillsTex);
-			//materials[0].SetTexture(LARGE_MOUNTAINS_NOISE_TEXTURE_NAME, largeMountainsTex);
-			//materials[0].SetTexture(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, mediumDetailTex);
+			/*RenderTexture oceanTex = GPUNoiseGenerator.GenerateNoise(seed, ocean);
+			RenderTexture plainHillsTex = GPUNoiseGenerator.GenerateNoise(seed, plainHills);
+			RenderTexture largeMountainsTex = GPUNoiseGenerator.GenerateNoise(seed, largeMountains);
+			RenderTexture mediumDetailTex = GPUNoiseGenerator.GenerateNoise(seed, mediumDetail);
+			materials[0].SetTexture(OCEAN_NOISE_TEXTURE_NAME, oceanTex);
+			materials[0].SetTexture(PLAIN_HILLS_NOISE_TEXTURE_NAME, plainHillsTex);
+			materials[0].SetTexture(LARGE_MOUNTAINS_NOISE_TEXTURE_NAME, largeMountainsTex);
+			materials[0].SetTexture(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, mediumDetailTex);*/
 
 			//materials[0].SetTexture("_MainTex", oceanTex);
 
-			renderTextureList = new List<RenderTexture> {
-				//oceanTex,
-                //plainHillsTex,
-                //largeMountainsTex
-                //mediumDetailTex
-            };
+			/*renderTextureList = new List<RenderTexture> {
+				oceanTex,
+                plainHillsTex,
+                largeMountainsTex,
+                mediumDetailTex
+            };*/
 
 			//
 			//mat.SetTexture("_MedTex", );
@@ -289,20 +290,22 @@ public class GPUPlanetData {
 		//if (shrinkMultiplier != 2) { // ------------------------ poista kommenteista kaikki paitsi tämä. tein compute shader testejä ... (enää en kyllä muista mitään ja mitkä kommentit pitää jättää)
 		//shrinkMultiplier *= 8; //}
 
-		//rend.material.SetFloat("_TextureShrinkMultiplier", shrinkMultiplier);
+		//rend.material.SetFloat("TextureShrinkMultiplier", shrinkMultiplier);
 
 		// Perlin noise maps
-		//Vector2 matTiling = rend.material.GetTextureScale(PLAIN_HILLS_NOISE_TEXTURE_NAME);
-		//Vector2 textureScale = new Vector2(matTiling.x / gridSize, matTiling.y / gridSize);
-		//rend.material.SetTextureScale(OCEAN_NOISE_TEXTURE_NAME, textureScale);
-		//rend.material.SetTextureScale(PLAIN_HILLS_NOISE_TEXTURE_NAME, textureScale);
-		//rend.material.SetTextureScale(LARGE_MOUNTAINS_NOISE_TEXTURE_NAME, textureScale);
-		//rend.material.SetTextureScale(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, textureScale);
+		/*Vector2 matTiling = rend.material.GetTextureScale(PLAIN_HILLS_NOISE_TEXTURE_NAME);
+		Vector2 textureScale = new Vector2(matTiling.x / gridSize, matTiling.y / gridSize);
+		rend.material.SetTextureScale(OCEAN_NOISE_TEXTURE_NAME, textureScale);
+		rend.material.SetTextureScale(PLAIN_HILLS_NOISE_TEXTURE_NAME, textureScale);
+		rend.material.SetTextureScale(LARGE_MOUNTAINS_NOISE_TEXTURE_NAME, textureScale);
+		rend.material.SetTextureScale(CLIFFS_TEXTURE_NAME, textureScale);
+		rend.material.SetTextureScale(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, textureScale);
 
-		//rend.material.SetTextureScale(OCEAN_BOTTOM_TEXTURE_NAME, textureScale);
-		//rend.material.SetTextureScale(DEFAULT_GROUND_TEXTURE_NAME, textureScale);
-		//rend.material.SetTextureScale(MOUNTAINS_TEXTURE_NAME, textureScale);
-		//rend.material.SetTextureScale(MOUNTAIN_TOP_TEXTURE_NAME, textureScale);
+		rend.material.SetTextureScale(OCEAN_BOTTOM_TEXTURE_NAME, textureScale);
+		rend.material.SetTextureScale(DEFAULT_GROUND_TEXTURE_NAME, textureScale);
+		rend.material.SetTextureScale(MOUNTAINS_TEXTURE_NAME, textureScale);
+		rend.material.SetTextureScale(CLIFFS_TEXTURE_NAME, textureScale);
+		rend.material.SetTextureScale(MOUNTAIN_TOP_TEXTURE_NAME, textureScale);*/
 
 
 
@@ -334,14 +337,14 @@ public class GPUPlanetData {
 
 		//Texture2D texture = TextureGenerator.TextureFromHeightMap(heightMap);
 
-		float textureScale;
-		if (side.Length < 5)
-			textureScale = 0.125f;
-		else
-			textureScale = 0.125f / 8f;
+		//float textureScale;
+		//if (side.Length < 5)
+		//	textureScale = 0.125f;
+		//else
+		//	textureScale = 0.125f / 8f;
 
 		//rend.material.SetTextureScale("_MainTex", new Vector2(128f / shrinkMultiplier, 128f / shrinkMultiplier));
-		rend.material.SetTextureScale("_MainTex", new Vector2(textureScale, textureScale));
+		//rend.material.SetTextureScale("_MainTex", new Vector2(textureScale, textureScale));
 
 
 
@@ -479,9 +482,9 @@ public class GPUPlanetData {
 		//Texture2D noiseTexture = TextureGenerator.TextureFromHeightMap(heightMap2);
 		//rend.material.mainTexture = noiseTexture;
 
-		Texture2D texture = (Texture2D)Resources.Load("Textures/Ground/Sand_Beach");
+		/*Texture2D texture = (Texture2D)Resources.Load("Textures/Ground/Sand_Beach");
 		rend.material.SetTexture("_MainTex", texture);
-		rend.material.SetTextureScale("_MainTex", new Vector2(100, 100));
+		rend.material.SetTextureScale("_MainTex", new Vector2(100, 100));*/
 
 
 		//planetChunk.AddComponent<DrawNormals>();

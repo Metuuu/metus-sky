@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class Character {
+public class Character : MonoBehaviour {
 
     #region [ - variables - ]
 
