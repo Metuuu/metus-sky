@@ -470,14 +470,14 @@ MonoBehaviour:
   amplitude: 0.24
   persistance: 3
   lacunarity: 0.25
-  maxNoiseHeight: 1
+  maxNoiseHeight: 0.3
   offset: {x: 0, y: 0}
   noiseScale: 1
-  noiseResolution: 64
-  useRenderTextureForDrawingTexture: 1
+  noiseResolution: 120
+  useRenderTextureForDrawingTexture: 0
   side: 2
   quarter: 
-  enableHeight: 1
+  enableHeight: 0
   autoUdpate: 1
 --- !u!23 &170968864
 MeshRenderer:
@@ -534,7 +534,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 170968862}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -60.09, y: -40, z: -0}
+  m_LocalPosition: {x: -60, y: -40, z: -0}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_Children: []
   m_Father: {fileID: 0}
@@ -579,11 +579,11 @@ MonoBehaviour:
   amplitude: 0.24
   persistance: 3
   lacunarity: 0.25
-  maxNoiseHeight: 1
+  maxNoiseHeight: 0.3
   offset: {x: 0, y: 0}
   noiseScale: 1
-  noiseResolution: 64
-  useRenderTextureForDrawingTexture: 1
+  noiseResolution: 120
+  useRenderTextureForDrawingTexture: 0
   side: 4
   quarter: 
   enableHeight: 0
@@ -643,7 +643,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 325145293}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -60.09, y: -40, z: 20.17}
+  m_LocalPosition: {x: -60, y: -40, z: 20}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_Children: []
   m_Father: {fileID: 0}
@@ -797,11 +797,11 @@ MonoBehaviour:
   amplitude: 0.24
   persistance: 3
   lacunarity: 0.25
-  maxNoiseHeight: 1
+  maxNoiseHeight: 0.3
   offset: {x: 0, y: 0}
   noiseScale: 1
-  noiseResolution: 64
-  useRenderTextureForDrawingTexture: 1
+  noiseResolution: 120
+  useRenderTextureForDrawingTexture: 0
   side: 1
   quarter: 
   enableHeight: 0
@@ -861,7 +861,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 659955846}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -80.29, y: -40, z: 0}
+  m_LocalPosition: {x: -80, y: -40, z: 0}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_Children: []
   m_Father: {fileID: 0}
@@ -1124,11 +1124,11 @@ MonoBehaviour:
   amplitude: 0.24
   persistance: 3
   lacunarity: 0.25
-  maxNoiseHeight: 1
+  maxNoiseHeight: 0.3
   offset: {x: 0, y: 0}
   noiseScale: 1
-  noiseResolution: 64
-  useRenderTextureForDrawingTexture: 1
+  noiseResolution: 120
+  useRenderTextureForDrawingTexture: 0
   side: 3
   quarter: 
   enableHeight: 0
@@ -1233,11 +1233,11 @@ MonoBehaviour:
   amplitude: 0.24
   persistance: 3
   lacunarity: 0.25
-  maxNoiseHeight: 1
+  maxNoiseHeight: 0.3
   offset: {x: 0, y: 0}
   noiseScale: 1
-  noiseResolution: 64
-  useRenderTextureForDrawingTexture: 1
+  noiseResolution: 120
+  useRenderTextureForDrawingTexture: 0
   side: 0
   quarter: 
   enableHeight: 0
@@ -1297,7 +1297,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1551124001}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -60.16, y: -40, z: -20.2}
+  m_LocalPosition: {x: -60, y: -40, z: -20}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_Children: []
   m_Father: {fileID: 0}

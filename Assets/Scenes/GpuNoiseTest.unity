@@ -759,7 +759,7 @@ MonoBehaviour:
   noiseSource: 3
   ocean:
     noiseType: 0
-    resolution: 512
+    resolution: 1080
     side: 0
     quarter: 
     octaves: 3
@@ -767,10 +767,10 @@ MonoBehaviour:
     amplitude: 0.8
     lacunarity: 2
     persistence: 6
-    maxNoiseHeight: 0.0025
+    maxNoiseHeight: 0.005
   plainHills:
     noiseType: 0
-    resolution: 512
+    resolution: 1080
     side: 0
     quarter: 
     octaves: 1
@@ -778,10 +778,10 @@ MonoBehaviour:
     amplitude: 0.4
     lacunarity: 2
     persistence: 0.7
-    maxNoiseHeight: 0.05
+    maxNoiseHeight: 0.075
   largeMountains:
     noiseType: 0
-    resolution: 1024
+    resolution: 1080
     side: 0
     quarter: 4
     octaves: 5
@@ -789,18 +789,18 @@ MonoBehaviour:
     amplitude: 0.4
     lacunarity: 2
     persistence: 0.72
-    maxNoiseHeight: 0.05
+    maxNoiseHeight: 0.075
   mediumDetail:
     noiseType: 0
-    resolution: 256
+    resolution: 1080
     side: 0
     quarter: 
-    octaves: 0
-    frequency: 0.1
+    octaves: 1
+    frequency: 0.007
     amplitude: 0.4
-    lacunarity: 2
+    lacunarity: 2.36
     persistence: 0.75
-    maxNoiseHeight: 1
+    maxNoiseHeight: 8
 --- !u!4 &689989823
 Transform:
   m_ObjectHideFlags: 0
@@ -1320,6 +1320,20 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 4000013546701110, guid: 29bacf6193a4e9e4b9322efafbd8f150, type: 3}
+      propertyPath: m_RootOrder
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 20000012798247120, guid: 29bacf6193a4e9e4b9322efafbd8f150,
+        type: 3}
+      propertyPath: near clip plane
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 20000012798247120, guid: 29bacf6193a4e9e4b9322efafbd8f150,
+        type: 3}
+      propertyPath: far clip plane
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 4000013223887708, guid: 29bacf6193a4e9e4b9322efafbd8f150, type: 3}
       propertyPath: m_LocalPosition.x
       value: -10
@@ -1380,10 +1394,6 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 4000013546701110, guid: 29bacf6193a4e9e4b9322efafbd8f150, type: 3}
-      propertyPath: m_RootOrder
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4913180148293918, guid: 29bacf6193a4e9e4b9322efafbd8f150, type: 3}
       propertyPath: m_RootOrder
       value: 2
@@ -1412,16 +1422,6 @@ PrefabInstance:
         type: 3}
       propertyPath: near clip plane
       value: 6000
-      objectReference: {fileID: 0}
-    - target: {fileID: 20000012798247120, guid: 29bacf6193a4e9e4b9322efafbd8f150,
-        type: 3}
-      propertyPath: near clip plane
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 20000012798247120, guid: 29bacf6193a4e9e4b9322efafbd8f150,
-        type: 3}
-      propertyPath: far clip plane
-      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 20000011782440918, guid: 29bacf6193a4e9e4b9322efafbd8f150,
         type: 3}
@@ -7290,12 +7290,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 441482e8936e35048a1dffac814e3ef8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Profile: {fileID: 0}
-  m_StaticLightingSkyUniqueID: 0
-  m_LastComputedHash: 0
-  m_SkySettings: {fileID: 0}
-  m_SkySettingsFromProfile: {fileID: 0}
-  m_VolumeSkyList: []
 --- !u!4 &1996440437
 Transform:
   m_ObjectHideFlags: 1

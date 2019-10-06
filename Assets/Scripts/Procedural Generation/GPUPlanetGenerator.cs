@@ -34,16 +34,16 @@ public class GPUPlanetData {
 
 
 	// Material texture names
-	private static readonly string OCEAN_BOTTOM_TEXTURE_NAME = "TEX_Sand";
-	private static readonly string DEFAULT_GROUND_TEXTURE_NAME = "TEX_Grass";
-	private static readonly string CLIFFS_TEXTURE_NAME = "TEX_Cliff";
-	private static readonly string MOUNTAINS_TEXTURE_NAME = "TEX_Stone";
-	private static readonly string MOUNTAIN_TOP_TEXTURE_NAME = "TEX_Snow";
+	private static readonly string OCEAN_BOTTOM_TEXTURE_NAME = "_TEX_Sand";
+	private static readonly string DEFAULT_GROUND_TEXTURE_NAME = "_TEX_Grass";
+	private static readonly string CLIFFS_TEXTURE_NAME = "_TEX_Cliff";
+	private static readonly string MOUNTAINS_TEXTURE_NAME = "_TEX_Stone";
+	private static readonly string MOUNTAIN_TOP_TEXTURE_NAME = "_TEX_Snow";
 
-	private static readonly string OCEAN_NOISE_TEXTURE_NAME = "HM_Ocean";
-	private static readonly string PLAIN_HILLS_NOISE_TEXTURE_NAME = "HM_Plain_Hills";
-	private static readonly string LARGE_MOUNTAINS_NOISE_TEXTURE_NAME = "HM_Large_Mountains";
-	private static readonly string MEDIUM_DETAIL_NOISE_TEXTURE_NAME = "HM_MediumDetail";
+	private static readonly string OCEAN_NOISE_TEXTURE_NAME = "_HM_Ocean";
+	private static readonly string PLAIN_HILLS_NOISE_TEXTURE_NAME = "_HM_Plain_Hills";
+	private static readonly string LARGE_MOUNTAINS_NOISE_TEXTURE_NAME = "_HM_Large_Mountains";
+	private static readonly string MEDIUM_DETAIL_NOISE_TEXTURE_NAME = "_HM_Medium_Detail";
 
 
 
@@ -154,7 +154,7 @@ public class GPUPlanetData {
 			chunkMesh = GenerateSphericalMesh(Mathf.RoundToInt(gridSize), side); // generoi spherical meshen
 
 			materials = new Material[1];
-			materials[0] = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
+			materials[0] = new Material(Shader.Find("Shader Graphs/TestPlanetTextureShader"));
 			//materials[0] = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
 
 			//materials[0] = new Material(Shader.Find("Shader Forge/Terrain"));
@@ -209,17 +209,17 @@ public class GPUPlanetData {
 				name += "_" + side;
 			}
 
-			float[,] oceanHeightMap = new float[(int)ocean.resolution, (int)ocean.resolution];
-			float[,] plainHillsHeightMap = new float[(int)plainHills.resolution, (int)plainHills.resolution];
-			float[,] largeMountainsHeightMap = new float[(int)largeMountains.resolution, (int)largeMountains.resolution];
-			float[,] mediumDetailHeightMap = new float[(int)mediumDetail.resolution, (int)mediumDetail.resolution];
+			float[,] oceanHeightMap;// = new float[(int)ocean.resolution, (int)ocean.resolution];
+			float[,] plainHillsHeightMap;// = new float[(int)plainHills.resolution, (int)plainHills.resolution];
+			float[,] largeMountainsHeightMap;// = new float[(int)largeMountains.resolution, (int)largeMountains.resolution];
+			float[,] mediumDetailHeightMap;// = new float[(int)mediumDetail.resolution, (int)mediumDetail.resolution];
 
 			switch (noiseSource) {
 				case Noise.NoiseSource.GPU_2DFloatArray:
-					oceanHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, ocean);
-					plainHillsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, plainHills);
-					largeMountainsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, largeMountains);
-					mediumDetailHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, mediumDetail);
+					oceanHeightMap = oceanHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, ocean, gridSize);
+					plainHillsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, plainHills, gridSize);
+					largeMountainsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, largeMountains, gridSize);
+					mediumDetailHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, mediumDetail, gridSize);
 					break;
 				case Noise.NoiseSource.GPU_RenderTextureTo2DFloatArray:
 					oceanHeightMap = GPUNoiseGenerator.GenerateNoiseArrayFromRenderTexture(seed, ocean);
@@ -231,17 +231,26 @@ public class GPUPlanetData {
 					throw new System.Exception("Not Implemented");
 			}
 
-			//heightMaps = new float[][,] { oceanHeightMap, plainHillsHeightMap, largeMountainsHeightMap, mediumDetailHeightMap };
-			heightMaps = new float[][,] { oceanHeightMap, plainHillsHeightMap, largeMountainsHeightMap };
+			heightMaps = new float[][,] { oceanHeightMap, plainHillsHeightMap, largeMountainsHeightMap, mediumDetailHeightMap };
+			//heightMaps = new float[][,] { oceanHeightMap, plainHillsHeightMap, largeMountainsHeightMap };
 
-			/*RenderTexture oceanTex = GPUNoiseGenerator.GenerateNoise(seed, ocean);
+			RenderTexture oceanTex = GPUNoiseGenerator.GenerateNoise(seed, ocean);
 			RenderTexture plainHillsTex = GPUNoiseGenerator.GenerateNoise(seed, plainHills);
 			RenderTexture largeMountainsTex = GPUNoiseGenerator.GenerateNoise(seed, largeMountains);
 			RenderTexture mediumDetailTex = GPUNoiseGenerator.GenerateNoise(seed, mediumDetail);
+
 			materials[0].SetTexture(OCEAN_NOISE_TEXTURE_NAME, oceanTex);
 			materials[0].SetTexture(PLAIN_HILLS_NOISE_TEXTURE_NAME, plainHillsTex);
 			materials[0].SetTexture(LARGE_MOUNTAINS_NOISE_TEXTURE_NAME, largeMountainsTex);
-			materials[0].SetTexture(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, mediumDetailTex);*/
+			materials[0].SetTexture(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, mediumDetailTex);
+			
+			Vector2 textureScale = new Vector2(1f / gridSize, 1f / gridSize);
+			materials[0].SetVector("_TextureScale", textureScale);
+
+			materials[0].SetFloat("_Brightness1", 10f);
+			materials[0].SetFloat("_Brightness2", 4f);
+			materials[0].SetFloat("_Priority1", 0.7f);
+			materials[0].SetFloat("_Priority2", 0.45f);
 
 			//materials[0].SetTexture("_MainTex", oceanTex);
 
@@ -299,7 +308,6 @@ public class GPUPlanetData {
 		rend.material.SetTextureScale(OCEAN_NOISE_TEXTURE_NAME, textureScale);
 		rend.material.SetTextureScale(PLAIN_HILLS_NOISE_TEXTURE_NAME, textureScale);
 		rend.material.SetTextureScale(LARGE_MOUNTAINS_NOISE_TEXTURE_NAME, textureScale);
-		rend.material.SetTextureScale(CLIFFS_TEXTURE_NAME, textureScale);
 		rend.material.SetTextureScale(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, textureScale);
 
 		rend.material.SetTextureScale(OCEAN_BOTTOM_TEXTURE_NAME, textureScale);

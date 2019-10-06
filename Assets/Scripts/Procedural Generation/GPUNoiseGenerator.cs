@@ -5,8 +5,9 @@ using UnityEngine;
 public static class GPUNoiseGenerator {
 
     public enum NoiseType { PERLIN }
-    public enum NoiseResolution { TRASH = 32, VERY_VERY_LOW = 64, VERY_LOW = 128, LOW = 256, MEDIUM = 512, HIGH = 1024, VERY_HIGH = 2048, ULTRA = 4096 }
-    public enum Side { Bottom, Left, Front, Right, Top, Back }
+    //public enum NoiseResolution { TRASH = 32, VERY_VERY_LOW = 64, VERY_LOW = 128, LOW = 256, MEDIUM = 512, HIGH = 1024, VERY_HIGH = 2048, ULTRA = 4096 }
+	public enum NoiseResolution { TRASH = 24, VERY_VERY_LOW = 48, VERY_LOW = 96, LOW = 120, MEDIUM = 240, HIGH = 1080, VERY_HIGH = 2160, ULTRA = 4320 }
+	public enum Side { Bottom, Left, Front, Right, Top, Back }
 
 
 	[System.Serializable]
@@ -241,7 +242,7 @@ public static class GPUNoiseGenerator {
 		shader.SetVector("Offset", offset);
 		shader.SetFloat("MaxNoiseHeight", noiseData.maxNoiseHeight);
 		shader.SetTexture(kernelIndex, "tex", texture);
-		shader.Dispatch(kernelIndex, (int)noiseData.resolution / 32, (int)noiseData.resolution / 32, 1);
+		shader.Dispatch(kernelIndex, (int)noiseData.resolution / 24, (int)noiseData.resolution / 24, 1);
 		return texture;
 
 	}
@@ -451,7 +452,7 @@ public static class GPUNoiseGenerator {
 		shader.SetVector("Offset", offset);
 		shader.SetFloat("MaxNoiseHeight", noiseType.maxNoiseHeight);
 		shader.SetTexture(kernelIndex, "tex", texture);
-		shader.Dispatch(kernelIndex, resolution / 32, resolution / 32, 1);
+		shader.Dispatch(kernelIndex, resolution / 24, resolution / 24, 1);
 
 		RenderTexture.active = texture;
 		Texture2D texture2d = new Texture2D(resolution, resolution, TextureFormat.RGBAFloat, false);
@@ -797,7 +798,7 @@ public static class GPUNoiseGenerator {
 		int kernelIndex = shader.FindKernel("PerlinNoise" + kernelName + quarterName + "V");
 		shader.SetBuffer(kernelIndex, "buffer", buffer);
 		//shader.Dispatch(kernelIndex, size / 1024, 1, 1);
-		shader.Dispatch(kernelIndex, mgs / 32, mgs / 32, 1);
+		shader.Dispatch(kernelIndex, mgs / 24, mgs / 24, 1);
 
 		buffer.GetData(heightMapArray);
 

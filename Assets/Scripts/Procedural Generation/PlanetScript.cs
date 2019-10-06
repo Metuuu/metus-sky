@@ -251,7 +251,7 @@ public class PlanetScript : MonoBehaviour {
     void LODQuarters(string side, int lodIndex) {
         
         int i = lodIndex;
-        bool nextLod = (i != lodsCount-1); // onko seuraavan tason lod tarkkuutta olemassa
+        bool nextLod = (i != lodsCount); // onko seuraavan tason lod tarkkuutta olemassa
             
         // Looppaa jokaisen neljäsosan läpi
         for (int quarter = 0; quarter < 4; ++quarter) {
