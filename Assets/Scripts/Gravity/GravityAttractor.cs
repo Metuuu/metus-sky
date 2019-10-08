@@ -12,9 +12,9 @@ public class GravityAttractor : MonoBehaviour {
     float distance;
     Vector3 direction;
 
-
+	
     // - Start -
-    public void Start() {
+    private void Awake() {
         myTransform = transform;
     }
 
@@ -22,7 +22,6 @@ public class GravityAttractor : MonoBehaviour {
 
     // - Attract object -
     public void Attract(float gravityAcceleration, Rigidbody rb, ref Vector3 localGlobalUp, bool freezeRotation, float rotatingSpeed, Vector3 up, bool closestPlanet) {
-        
         heading = myTransform.position - rb.position;
         distance = heading.magnitude;
         direction = heading / distance;

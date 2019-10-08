@@ -17,6 +17,15 @@ TagManager:
   - UI
   - 
   - 
+  - BackGroundParticles
+  - Ground
+  - Test
+  - InteractiveObjectCollider
+  - VehicleHolder
+  - InteriorCheck
+  - Player
+  - Slope
+  - CollisionDimension
   - FogVolumeShadowCaster
   - FogVolume
   - FogVolumeSurrogate
@@ -32,16 +41,10 @@ TagManager:
   - 
   - 
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: BackgroundParticles
+    uniqueID: 4181572067
     locked: 0

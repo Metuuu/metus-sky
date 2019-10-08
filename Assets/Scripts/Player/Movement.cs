@@ -4,10 +4,10 @@ using System.Collections.Generic;
 
 public class Movement : MonoBehaviour {
 
-    #region [ - Init - ]
+	#region [ - Init - ]
 
-    // classes
-    Transform transform;
+	// classes
+	new Transform transform;
     [HideInInspector] public Rigidbody rb;
     public Transform cameraT;
     PlanetLocalDirections PLDir;
@@ -212,7 +212,7 @@ public class Movement : MonoBehaviour {
         inputY = Input.GetAxisRaw("Vertical");
         input = Vector2.Lerp(input, new Vector2(inputX, inputY), movementAcceleration);
         
-        if (Input.GetKeyDown(KeyCode.LeftShift)) { isRunning = true; } // running
+        if (Input.GetKey(KeyCode.LeftShift)) { isRunning = true; } // running
         else { isRunning = false; } // walking
         
         // Movement speed

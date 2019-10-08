@@ -4,10 +4,10 @@ using System.Collections;
 public class GravityBody : MonoBehaviour {
 
 
-    // - Init -
-    public Transform transform;
-    public Transform realBodyTransform;
-    GravityAttractor attractor;
+	// - Init -
+	[HideInInspector] public new Transform transform;
+	[HideInInspector] public Transform realBodyTransform;
+	readonly GravityAttractor attractor;
     Rigidbody rb;
 
     public float radius;
@@ -69,10 +69,12 @@ public class GravityBody : MonoBehaviour {
         if (closestPlanet == null) { return; }
 
 		//closestPlanetRadius = closestPlanet.GetComponent<PlanetScript>().planetData.radius;
-		PlanetTestScript planetScript = closestPlanet.GetComponent<PlanetTestScript>();
+		//PlanetTestScript planetScript = closestPlanet.GetComponent<PlanetTestScript>();
+		PlanetScript planetScript = closestPlanet.GetComponent<PlanetScript>();
 		if (planetScript == null) { return; }
 
-		closestPlanetRadius = planetScript.radius;
+		//closestPlanetRadius = planetScript.radius;
+		closestPlanetRadius = planetScript.planetData.radius;
 
 		distanceToClosestPlanet = Vector3.Distance(transform.position, closestPlanet.transform.position);
         distanceToClosestPlanetSurface = Vector3.Distance(transform.position, closestPlanet.transform.position) - closestPlanetRadius;

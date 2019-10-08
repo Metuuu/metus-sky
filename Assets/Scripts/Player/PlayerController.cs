@@ -201,7 +201,11 @@ public class PlayerController : MonoBehaviour {
     }
     public void Stun(float stunTime) {
         Character.IsStunned = true;
-        this.stunTime += stunTime;
+		if (this.stunTime + stunTime > 6) {
+			this.stunTime = 6;
+		} else {
+			this.stunTime += stunTime;
+		}
     }
     public void RecoverFromStun() {
         Character.IsStunned = false;
@@ -226,12 +230,12 @@ public class PlayerController : MonoBehaviour {
         //Debug.Log((collisionLocalRelativeVel[1].magnitude));
 
 		// TODO: improve crippled stun
-        /*if (collisionLocalRelativeVel[1].magnitude > 3) {
+        if (collisionLocalRelativeVel[1].magnitude > 3) {
             Debug.Log(" CRIPPLED - " + collisionLocalRelativeVel[1].magnitude);
             audio.CrippleSound();
-            Stun(10);
+            Stun(3);
             Character.RigidBody.AddTorque(PLDir.forward * -30f + PLDir.right * 40f, ForceMode.Impulse);
-        }*/
+        }
         
     }
 
