@@ -212,7 +212,7 @@ public class Movement : MonoBehaviour {
         inputY = Input.GetAxisRaw("Vertical");
         input = Vector2.Lerp(input, new Vector2(inputX, inputY), movementAcceleration);
         
-        if (Input.GetButton("Shift")) { isRunning = true; } // running
+        if (Input.GetKeyDown(KeyCode.LeftShift)) { isRunning = true; } // running
         else { isRunning = false; } // walking
         
         // Movement speed
