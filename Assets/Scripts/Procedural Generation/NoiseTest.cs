@@ -26,6 +26,7 @@ public class NoiseTest : MonoBehaviour {
 
 	[SerializeField] float noiseScale = 10;
 	[SerializeField] GPUNoiseGenerator.NoiseResolution noiseResolution = GPUNoiseGenerator.NoiseResolution.LOW;
+	[SerializeField] int gridSize = 24;
 	[SerializeField] bool useRenderTextureForDrawingTexture = true;
 
 	[SerializeField] GPUNoiseGenerator.Side side = GPUNoiseGenerator.Side.Bottom;
@@ -33,6 +34,7 @@ public class NoiseTest : MonoBehaviour {
 
 	[SerializeField] bool enableHeight = false;
 	[SerializeField] bool autoUdpate = true;
+
 
 	int lastNoisePerformanceTestLoopTimes = 0;
 	Noise.NoiseSource lastNoiseSource;
@@ -46,6 +48,7 @@ public class NoiseTest : MonoBehaviour {
 	Vector2 lastOffset = new Vector2(0, 0);
 	float lastNoiseScale = 0;
 	GPUNoiseGenerator.NoiseResolution lastNoiseResolution = GPUNoiseGenerator.NoiseResolution.VERY_LOW;
+	int lastGridSize = 0;
 	GPUNoiseGenerator.Side lastSide = GPUNoiseGenerator.Side.Bottom;
 	string lastQuarter = "";
 	bool lastEnableHeight = false;
@@ -59,14 +62,17 @@ public class NoiseTest : MonoBehaviour {
 		mf = gameObject.GetComponent<MeshFilter>();
 
 		originalScale = transform.localScale.x;
-		SetMeshGrid((int)noiseResolution, true);
+
+		//gridSize = (int)noiseResolution;
+
+		SetMeshGrid(gridSize, true);
 		originalVertices = (Vector3[])mf.mesh.vertices.Clone();
 
 	}
 
 	// - Update -
 	void Update() {
-		if (Input.GetKeyDown(KeyCode.Space) || (autoUdpate && (noisePerformanceTestLoopTimes != lastNoisePerformanceTestLoopTimes || noiseSource != lastNoiseSource || seed != lastSeed || octaves != lastOctaves || frequency != lastFrequency || amplitude != lastAmplitude || persistance != lastPersistance || lacunarity != lastLacunarity || maxNoiseHeight != lastMaxNoiseHeight || offset != lastOffset || noiseScale != lastNoiseScale || noiseResolution != lastNoiseResolution || side != lastSide || quarter != lastQuarter || enableHeight != lastEnableHeight))) {
+		if (Input.GetKeyDown(KeyCode.Space) || (autoUdpate && (noisePerformanceTestLoopTimes != lastNoisePerformanceTestLoopTimes || noiseSource != lastNoiseSource || seed != lastSeed || octaves != lastOctaves || frequency != lastFrequency || amplitude != lastAmplitude || persistance != lastPersistance || lacunarity != lastLacunarity || maxNoiseHeight != lastMaxNoiseHeight || offset != lastOffset || noiseScale != lastNoiseScale || noiseResolution != lastNoiseResolution || gridSize != lastGridSize || side != lastSide || quarter != lastQuarter || enableHeight != lastEnableHeight))) {
 
 			if (noiseSource != Noise.NoiseSource.GPU_RenderTexture) {
 				DrawNoiseToPlane();
@@ -74,8 +80,9 @@ public class NoiseTest : MonoBehaviour {
 				DrawNoiseToPlaneGPURenderTexture();
 			}
 
-			if (lastNoiseResolution != noiseResolution) {
-				SetMeshGrid((int)noiseResolution);
+			//if (lastNoiseResolution != noiseResolution) {
+			if (lastGridSize != gridSize) {
+				SetMeshGrid(gridSize);
 				originalVertices = (Vector3[])mf.mesh.vertices.Clone();
 			}
 
@@ -96,6 +103,7 @@ public class NoiseTest : MonoBehaviour {
 			lastOffset = offset;
 			lastNoiseScale = noiseScale;
 			lastNoiseResolution = noiseResolution;
+			lastGridSize = gridSize;
 			lastSide = side;
 			lastQuarter = quarter;
 			lastEnableHeight = enableHeight;
@@ -122,7 +130,7 @@ public class NoiseTest : MonoBehaviour {
 			resolution = noiseResolution
 		};
 
-		heightMap = Noise.GenerateNoiseMap(seed, offset, noiseData, noiseScale, noiseSource, (int)noiseResolution, noisePerformanceTestLoopTimes);
+		heightMap = Noise.GenerateNoiseMap(seed, offset, noiseData, noiseScale, noiseSource, gridSize, noisePerformanceTestLoopTimes);
 
 		if (!useRenderTextureForDrawingTexture) {
 			Texture2D noiseTexture = TextureGenerator.TextureFromHeightMap(heightMap);

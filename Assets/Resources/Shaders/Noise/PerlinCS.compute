@@ -209,37 +209,37 @@ float PerlinNormal(float3 p, int octaves, float3 offset, float frequency, float 
 
 // ----------------  RENDER TEXTURE ---------------- \\
 
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseBottom(uint2 id : SV_DispatchThreadID)
 {
 	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, 0, id.y + Offset.z), Octaves, float3(0, resolution, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseLeft(uint2 id : SV_DispatchThreadID)
 {
 	tex[id.xy] = PerlinNormal(float3(0, id.y + Offset.y, id.x + Offset.z), Octaves, float3(resolution, 0, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseFront(uint2 id : SV_DispatchThreadID)
 {
 	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, id.y + Offset.y, 0), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseRight(uint2 id : SV_DispatchThreadID)
 {
 	tex[id.xy] = PerlinNormal(float3(0, id.y + Offset.y, resolution-id.x + Offset.z), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseTop(uint2 id : SV_DispatchThreadID)
 {
 	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, 0, resolution-id.y + Offset.z), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseBack(uint2 id : SV_DispatchThreadID)
 {
 	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, resolution-id.y + Offset.y, 0), Octaves, float3(0,0, resolution), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
@@ -422,7 +422,7 @@ float3 getBottomPosition(uint2 id, int posMultiplier) {
 	float3 B = Join(joinBottom, BottomJBottom(), y);
 	return BottomXPos(x) + BottomYPos(y) + BottomOffset() + R + B;
 }
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseBottomV(uint2 id : SV_DispatchThreadID)
 {
 	uint structs;
@@ -445,7 +445,7 @@ float3 getLeftPosition(uint2 id, int posMultiplier) {
 	float3 BB = Join(joinBottomB, LeftJBottomB(), y);
 	return LeftXPos(x) + LeftYPos(y) + LeftOffset() + R + RB + B + BB;
 }
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseLeftV(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
@@ -467,7 +467,7 @@ float3 getFrontPosition(uint2 id, int posMultiplier) {
 	float3 bjB = Join(joinBottomB, frontJBottomB(), y);
 	return FrontXPos(x) + FrontYPos(y) + FrontOffset() + rj + bj + bjB;
 }
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseFrontV(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
@@ -512,7 +512,7 @@ float3 getRightPosition(uint2 id, int posMultiplier) {
 	float3 BB = Join(joinBottomB, RightJBottomB(), y);
 	return RightXPos(x) + RightYPos(y) + RightOffset() + R + LB + B + BB;
 }
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseRightV(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
@@ -537,7 +537,7 @@ float3 getTopPosition(uint2 id, int posMultiplier) {
 	float3 BB = Join(joinBottomB, TopJBottomB(), y);
 	return x * TopXPos() + y * TopYPos() + TopOffset() + TB + R + RB + LB + B + BB;
 }
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseTopV(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
@@ -561,7 +561,7 @@ float3 getBackPosition(uint2 id, int posMultiplier) {
 	float3 B = Join(joinBottom, BackJBottom(), y);
 	return x * BackXPos() + y * BackYPos() + BackOffset() + TB + R + RB + LB + B;
 }
-[numthreads(24, 24, 1)]
+[numthreads(32, 32, 1)]
 void PerlinNoiseBackV(uint2 id : SV_DispatchThreadID)
 {
     uint structs;

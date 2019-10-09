@@ -153,15 +153,6 @@ public class GPUPlanetData {
 
 			chunkMesh = GenerateSphericalMesh(Mathf.RoundToInt(gridSize), side); // generoi spherical meshen
 
-			materials = new Material[1];
-			materials[0] = new Material(Shader.Find("Shader Graphs/TestPlanetTextureShader"));
-			//materials[0] = new Material(Shader.Find("Universal Render Pipeline/Simple Lit"));
-
-			//materials[0] = new Material(Shader.Find("Shader Forge/Terrain"));
-
-
-			//Destroy(mediumHills.texture);
-
 			GPUNoiseGenerator.Side planetSide;
 
 			switch (side[0]) {
@@ -216,7 +207,7 @@ public class GPUPlanetData {
 
 			switch (noiseSource) {
 				case Noise.NoiseSource.GPU_2DFloatArray:
-					oceanHeightMap = oceanHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, ocean, gridSize);
+					oceanHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, ocean, gridSize);
 					plainHillsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, plainHills, gridSize);
 					largeMountainsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, largeMountains, gridSize);
 					mediumDetailHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, mediumDetail, gridSize);
@@ -234,6 +225,19 @@ public class GPUPlanetData {
 			heightMaps = new float[][,] { oceanHeightMap, plainHillsHeightMap, largeMountainsHeightMap, mediumDetailHeightMap };
 			//heightMaps = new float[][,] { oceanHeightMap, plainHillsHeightMap, largeMountainsHeightMap };
 
+			materials = new Material[1];
+
+			// Height Map material
+			/*materials[0] = new Material(Shader.Find("Unlit/Texture"));
+			Texture2D noiseTexture = TextureGenerator.TextureFromHeightMap(mediumDetailHeightMap);
+			Vector2 textureScale = new Vector2(1f / gridSize, 1f / gridSize);
+			materials[0].mainTextureScale = textureScale;
+			materials[0].mainTexture = noiseTexture;*/
+
+
+			// Textured
+			//materials[0] = new Material(Shader.Find("Shader Forge/Terrain"));
+			materials[0] = new Material(Shader.Find("Shader Graphs/TestPlanetTextureShader"));
 			RenderTexture oceanTex = GPUNoiseGenerator.GenerateNoise(seed, ocean);
 			RenderTexture plainHillsTex = GPUNoiseGenerator.GenerateNoise(seed, plainHills);
 			RenderTexture largeMountainsTex = GPUNoiseGenerator.GenerateNoise(seed, largeMountains);
@@ -243,16 +247,16 @@ public class GPUPlanetData {
 			materials[0].SetTexture(PLAIN_HILLS_NOISE_TEXTURE_NAME, plainHillsTex);
 			materials[0].SetTexture(LARGE_MOUNTAINS_NOISE_TEXTURE_NAME, largeMountainsTex);
 			materials[0].SetTexture(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, mediumDetailTex);
-			
+
 			Vector2 textureScale = new Vector2(1f / gridSize, 1f / gridSize);
 			materials[0].SetVector("_TextureScale", textureScale);
 
-			materials[0].SetFloat("_Brightness1", 10f);
-			materials[0].SetFloat("_Brightness2", 4f);
-			materials[0].SetFloat("_Priority1", 0.7f);
-			materials[0].SetFloat("_Priority2", 0.45f);
+			materials[0].SetFloat("_Brightness1", 6.36f);
+			materials[0].SetFloat("_Brightness2", 1.66f);
+			materials[0].SetFloat("_Brightness3", 0.4f);
+			materials[0].SetFloat("_Brightness4", 22.73f);
 
-			//materials[0].SetTexture("_MainTex", oceanTex);
+			materials[0].SetTexture("_MainTex", oceanTex);
 
 			/*renderTextureList = new List<RenderTexture> {
 				oceanTex,
@@ -378,8 +382,8 @@ public class GPUPlanetData {
 
 			for (int i = 0; i < heightMaps.Length; ++i) {
 				float[,] heightMap = heightMaps[i];
-				int resolution = heightMap.GetLength(0);
-				float hmPosMultiplier = (float)(resolution - 1) / ((float)(verticesWidth - 1));
+				int hmapLength = heightMap.GetLength(0);
+				float hmPosMultiplier = (float)(hmapLength - 1) / ((float)(verticesWidth - 1));
 				//Debug.Log(" ---------- " + name + " ---------- ");
 
 
@@ -392,7 +396,7 @@ public class GPUPlanetData {
 						//	heightmapPoint = (float)Math.Round(heightmapPoint, 1);
 						//}
 
-						newVertex = (normals[x + y * verticesWidth].normalized * heightmapPoint)/100f;
+						newVertex = (normals[x + y * verticesWidth].normalized * heightmapPoint) / 100f;
 						//newVertex = new Vector3((float)Math.Round(newVertex.x, 2), (float)Math.Round(newVertex.y, 2), (float)Math.Round(newVertex.z, 2));
 						newVertices[x + y * verticesWidth] += newVertex;
 
@@ -451,6 +455,7 @@ public class GPUPlanetData {
 			mf.mesh.vertices = newVertices;
 			/*mf.mesh.vertices = vertices;*/
 			mf.mesh.RecalculateNormals(); // Important! Jos ei käytä niin kaikki shadows menee esim ihan pilalle
+			mf.mesh.RecalculateBounds(); // Important!
 
 			//for (int i = 0; i < vertices.Length; ++i) {
 			//    Debug.Log("-----");
