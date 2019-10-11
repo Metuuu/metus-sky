@@ -267,7 +267,7 @@ float3 BottomYPos(float y) {
 	return y * float3(0, 0, 1);
 }
 float3 BottomOffset() {
-	return float3(Offset.x, resolution-1, Offset.z);
+	return float3(Offset.x, 0, Offset.z);
 }
 float3 BottomJBottom() {
 	return float3(0, 0, 1);
@@ -284,7 +284,7 @@ float3 LeftYPos(float y) {
 	return y * float3(0, 1, 0);
 }
 float3 LeftOffset() {
-	return float3(resolution-1, Offset.y, Offset.z);
+	return float3(0, Offset.y, Offset.z);
 }
 float3 LeftJRightB() {
 	return float3(0, 0, 0);
@@ -380,14 +380,14 @@ float3 TopJBottomB() {
 }
 
 // BACK
-float3 BackXPos() {
-	return float3(1, 0, 0);
+float3 BackXPos(float x) {
+	return x * float3(1, 0, 0);
 }
-float3 BackYPos() {
-	return float3(0, 1, 0);
+float3 BackYPos(float y) {
+	return y * float3(0, 1, 0);
 }
 float3 BackOffset() {
-	return float3(Offset.x, Offset.y, resolution-1);
+	return float3(Offset.x, Offset.y, 0);
 }
 float3 BackJTopB() {
 	return float3(0, 0, 0);
@@ -398,7 +398,8 @@ float3 BackJLeftB() {
 	//return float3(0, 0, -1);
 }
 float3 BackJRight() {
-	return float3(-1, 0, 0);
+	return float3(0, 0, 0);
+	//return float3(-1, 0, 0);
 	//return float3(-1, 0, 0);
 }
 float3 BackJRightB() {
@@ -431,7 +432,7 @@ void PerlinNoiseBottomV(uint2 id : SV_DispatchThreadID)
 	float3 position = getBottomPosition(id, resolution / meshGridSize);
 
 	buffer.GetDimensions(structs, stride);
-	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, float3(0, resolution - 1, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
 
@@ -454,7 +455,7 @@ void PerlinNoiseLeftV(uint2 id : SV_DispatchThreadID)
 	float3 position = getLeftPosition(id, resolution / meshGridSize);
 
 	buffer.GetDimensions(structs, stride);
-	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, float3(resolution - 1, 0, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
 
@@ -559,7 +560,7 @@ float3 getBackPosition(uint2 id, int posMultiplier) {
 	float3 RB = Join(joinRightB, BackJRightB(), x);
 	float3 LB = Join(joinLeftB, BackJLeftB(), x);
 	float3 B = Join(joinBottom, BackJBottom(), y);
-	return x * BackXPos() + y * BackYPos() + BackOffset() + TB + R + RB + LB + B;
+	return BackXPos(x) + BackYPos(y) + BackOffset() + TB + R + RB + LB + B;
 }
 [numthreads(32, 32, 1)]
 void PerlinNoiseBackV(uint2 id : SV_DispatchThreadID)
@@ -570,5 +571,5 @@ void PerlinNoiseBackV(uint2 id : SV_DispatchThreadID)
 	float3 position = getBackPosition(id, resolution / meshGridSize);
 
 	buffer.GetDimensions(structs, stride);
-	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, float3(0, 0, resolution-1), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
