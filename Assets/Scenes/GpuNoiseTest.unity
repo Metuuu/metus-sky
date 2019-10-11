@@ -803,12 +803,12 @@ MonoBehaviour:
     resolution: 1024
     side: 0
     quarter: 
-    octaves: 3
-    frequency: 0.2
-    amplitude: 0.8
-    lacunarity: 2
-    persistence: 6
-    maxNoiseHeight: 0.005
+    octaves: 1
+    frequency: 0.007
+    amplitude: 0.4
+    lacunarity: 0.73
+    persistence: 0.75
+    maxNoiseHeight: 15
   plainHills:
     noiseType: 0
     resolution: 1024
@@ -836,12 +836,12 @@ MonoBehaviour:
     resolution: 1024
     side: 0
     quarter: 
-    octaves: 1
-    frequency: 0.007
-    amplitude: 0.4
-    lacunarity: 0.73
-    persistence: 0.75
-    maxNoiseHeight: 15
+    octaves: 3
+    frequency: 0.2
+    amplitude: 0.8
+    lacunarity: 2
+    persistence: 6
+    maxNoiseHeight: 0.005
 --- !u!4 &689989823
 Transform:
   m_ObjectHideFlags: 0
@@ -7219,13 +7219,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1746508312}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 285683696895a7b4bba532f6b3d2fe82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   centerObj: {fileID: 1746508326}
-  maxDistance: 6000
+  maxDistance: 10000
 --- !u!4 &1746508326 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4000013223887708, guid: 29bacf6193a4e9e4b9322efafbd8f150,
