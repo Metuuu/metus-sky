@@ -258,12 +258,12 @@ public class GPUPlanetData {
 
 			materials[0].SetTexture("_MainTex", oceanTex);
 
-			/*renderTextureList = new List<RenderTexture> {
+			renderTextureList = new List<RenderTexture> {
 				oceanTex,
                 plainHillsTex,
                 largeMountainsTex,
                 mediumDetailTex
-            };*/
+            };
 
 			//
 			//mat.SetTexture("_MedTex", );
