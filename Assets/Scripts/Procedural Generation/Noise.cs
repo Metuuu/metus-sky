@@ -23,7 +23,7 @@ public static class Noise {
 
 	//mapSizeSqrt, mapSizeSqrt, seed, side, offset, octaves, persistence, lacunarity, noiseSource
 
-	public static float[,] GenerateNoiseMap(int seed, Vector3 offset, GPUNoiseGenerator.NoiseData noise, float scale, NoiseSource source, int? meshGridSize = null, int performanceTestLoops = 1)
+	public static float[,] GenerateNoiseMap(int seed, Vector3 offset, GPUNoiseGenerator.NoiseData noise, float scale, NoiseSource source, int? meshGridSize = null, float zoom = 1, int performanceTestLoops = 1, float radius = 100)
 	{
 		int mapSizeSqrt = (int)noise.resolution;
 		float[,] noiseMap = new float[mapSizeSqrt, mapSizeSqrt];
@@ -202,7 +202,7 @@ public static class Noise {
 
 				case NoiseSource.GPU_2DFloatArray:
 					#region [ - GPU 2D Float Array - ]
-					noiseMap = GPUNoiseGenerator.GenerateNoiseArray(seed, noise, meshGridSize);
+					noiseMap = GPUNoiseGenerator.GenerateNoiseArray(seed, noise, radius, meshGridSize, offset, zoom);
 					#endregion
 					break;
 

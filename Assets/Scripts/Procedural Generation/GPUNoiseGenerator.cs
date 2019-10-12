@@ -41,7 +41,7 @@ public static class GPUNoiseGenerator {
 
 
 	// Generate noise render texture
-	public static RenderTexture GenerateNoise(int seed, NoiseData noiseData) {
+	public static RenderTexture GenerateNoise(int seed, NoiseData noiseData, float planetRadius) {
 
 		// Create new texture
 		RenderTexture texture = RenderTexture.GetTemporary((int)noiseData.resolution, (int)noiseData.resolution, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear); // TODO: KORJAA MEMORY LEAK ? tää ollut myös RHalf mutta nyt compute shader testeihin varmuuden vuoks RFloat
@@ -65,22 +65,28 @@ public static class GPUNoiseGenerator {
 		int kernelIndex = 0;
 		switch (noiseData.side) {
 			case Side.Bottom:
-				kernelIndex = shader.FindKernel("PerlinNoiseBottom");
+				kernelIndex = shader.FindKernel("PerlinNoiseSphereBottomTex");
+				//kernelIndex = shader.FindKernel("PerlinNoiseCubeBottomTex");
 				break;
 			case Side.Left:
-				kernelIndex = shader.FindKernel("PerlinNoiseLeft");
+				kernelIndex = shader.FindKernel("PerlinNoiseSphereLeftTex");
+				//kernelIndex = shader.FindKernel("PerlinNoiseCubeLeftTex");
 				break;
 			case Side.Front:
-				kernelIndex = shader.FindKernel("PerlinNoiseFront");
+				kernelIndex = shader.FindKernel("PerlinNoiseSphereFrontTex");
+				//kernelIndex = shader.FindKernel("PerlinNoiseCubeFrontTex");
 				break;
 			case Side.Right:
-				kernelIndex = shader.FindKernel("PerlinNoiseRight");
+				kernelIndex = shader.FindKernel("PerlinNoiseSphereRightTex");
+				//kernelIndex = shader.FindKernel("PerlinNoiseCubeRightTex");
 				break;
 			case Side.Top:
-				kernelIndex = shader.FindKernel("PerlinNoiseTop");
+				kernelIndex = shader.FindKernel("PerlinNoiseSphereTopTex");
+				//kernelIndex = shader.FindKernel("PerlinNoiseCubeTopTex");
 				break;
 			case Side.Back:
-				kernelIndex = shader.FindKernel("PerlinNoiseBack");
+				kernelIndex = shader.FindKernel("PerlinNoiseSphereBackTex");
+				//kernelIndex = shader.FindKernel("PerlinNoiseCubeBackTex");
 				break;
 		}
 
@@ -205,42 +211,18 @@ public static class GPUNoiseGenerator {
 		// Noise Resolution
 		offset *= (int)noiseData.resolution;
 
-		float freqMultiplier = 1;
-		switch (noiseData.resolution) {
-			case NoiseResolution.TRASH:
-				freqMultiplier = 16;
-				break;
-			case NoiseResolution.VERY_VERY_LOW:
-				freqMultiplier = 8;
-				break;
-			case NoiseResolution.VERY_LOW:
-				freqMultiplier = 4;
-				break;
-			case NoiseResolution.LOW:
-				freqMultiplier = 2;
-				break;
-			case NoiseResolution.HIGH:
-				freqMultiplier = 0.5f;
-				break;
-			case NoiseResolution.VERY_HIGH:
-				freqMultiplier = 0.25f;
-				break;
-			case NoiseResolution.ULTRA:
-				freqMultiplier = 0.125f;
-				break;
-		}
-
 
 		// Calculate noise map
 		shader.SetFloat("resolution", (int)noiseData.resolution);
 		shader.SetFloat("zoom", zoom);
 		shader.SetFloat("Octaves", noiseData.octaves);
-		shader.SetFloat("Frequency", noiseData.frequency * freqMultiplier);
+		shader.SetFloat("Frequency", noiseData.frequency);
 		shader.SetFloat("Amplitude", noiseData.amplitude);
 		shader.SetFloat("Lacunarity", noiseData.lacunarity);
 		shader.SetFloat("Persistence", noiseData.persistence);
-		shader.SetVector("Offset", offset);
+		shader.SetVector("ChunkOffset", offset);
 		shader.SetFloat("MaxNoiseHeight", noiseData.maxNoiseHeight);
+		shader.SetFloat("radius", planetRadius);
 		shader.SetTexture(kernelIndex, "tex", texture);
 		shader.Dispatch(kernelIndex, (int)noiseData.resolution / 32, (int)noiseData.resolution / 32, 1);
 		return texture;
@@ -249,7 +231,11 @@ public static class GPUNoiseGenerator {
 
 
 
-	// Generate noise render texture
+	/**
+		Generate noise array from render texture
+		This was way slower than generating the array straight.
+		Old version now. This can be deleted when wanted.
+	 */
 	public static float[,] GenerateNoiseArrayFromRenderTexture(int seed, NoiseData noiseType) {
 		int resolution = (int)noiseType.resolution;
 
@@ -476,7 +462,7 @@ public static class GPUNoiseGenerator {
 
 
 	// Generate noise noise array
-	public static float[,] GenerateNoiseArray(int seed, NoiseData noiseType, int? meshGridSize = null) { // TODO: right top ja back ei toimi vielä - Kehittä DepthAndTesselation Koodia
+	public static float[,] GenerateNoiseArray(int seed, NoiseData noiseType, float planetRadius, int? meshGridSize = null, Vector3? offset = null, float zoom = 1) { // TODO: right top ja back ei toimi vielä - Kehittä DepthAndTesselation Koodia
 		int resolution = (int)noiseType.resolution;
 		int mgs = resolution;
 		if (meshGridSize != null) {
@@ -496,8 +482,8 @@ public static class GPUNoiseGenerator {
 		}
 
 		// Init vars
-		float zoom = 1;
-		Vector3 offset = Vector3.zero;
+		float chunkZoom = 1;
+		Vector3 chunkOffset = Vector3.zero;
 
 
 		// Join Table - [bottom, left, right, top] 1 = true, 0 = false
@@ -521,25 +507,26 @@ public static class GPUNoiseGenerator {
 
 
 		// Sides
-		string kernelName = "PerlinNoise";
+		string kernelName = "PerlinNoiseSphere";
+		//string kernelName = "PerlinNoiseCube";
 		switch (noiseType.side) {
 			case Side.Bottom:
-				kernelName = "Bottom";
+				kernelName += "Bottom";
 				break;
 			case Side.Left:
-				kernelName = "Left";
+				kernelName += "Left";
 				break;
 			case Side.Front:
-				kernelName = "Front";
+				kernelName += "Front";
 				break;
 			case Side.Right:
-				kernelName = "Right";
+				kernelName += "Right";
 				break;
 			case Side.Top:
-				kernelName = "Top";
+				kernelName += "Top";
 				break;
 			case Side.Back:
-				kernelName = "Back";
+				kernelName += "Back";
 				break;
 		}
 
@@ -599,113 +586,113 @@ public static class GPUNoiseGenerator {
 
 
 		for (int i = 0; i < quarterLen; ++i) {
-            zoom *= 2;
+            chunkZoom *= 2;
             switch (noiseType.side) {
                 case Side.Bottom:
-                    offset.x *= 2;
-                    offset.z *= 2;
+                    chunkOffset.x *= 2;
+                    chunkOffset.z *= 2;
                     switch (noiseType.quarter[i]) {
                         case '0': // vasenala
-                            offset.x += 1;
-                            offset.z += 1;
+                            chunkOffset.x += 1;
+                            chunkOffset.z += 1;
                             break;
                         case '1': // oikeeala
-                            offset.z += 1;
+                            chunkOffset.z += 1;
                             break;
                         case '2': // vasenylä
-                            offset.x += 1;
+                            chunkOffset.x += 1;
                             break;
                         case '3': // oikeeylä
                             break;
                     }
                     break;
                 case Side.Left:
-                    offset.z *= 2;
-                    offset.y *= 2;
+                    chunkOffset.z *= 2;
+                    chunkOffset.y *= 2;
                     switch (noiseType.quarter[i]) {
                         case '0': // vasenala
-                            offset.z += 1;
-                            offset.y += 1;
+                            chunkOffset.z += 1;
+                            chunkOffset.y += 1;
                             break;
                         case '1': // oikeeala
-                            offset.y += 1;
+                            chunkOffset.y += 1;
                             break;
                         case '2': // vasenylä
-                            offset.z += 1;
+                            chunkOffset.z += 1;
                             break;
                         case '3': // oikeeylä
                             break;
                     }
                     break;
                 case Side.Front:
-                    offset.x *= 2;
-                    offset.y *= 2;
+                    chunkOffset.x *= 2;
+                    chunkOffset.y *= 2;
                     switch (noiseType.quarter[i]) {
                         case '0': // vasenala
-                            offset.x += 1;
-                            offset.y += 1;
+                            chunkOffset.x += 1;
+                            chunkOffset.y += 1;
                             break;
                         case '1': // oikeeala
-                            offset.y += 1;
+                            chunkOffset.y += 1;
                             break;
                         case '2': // vasenylä
-                            offset.x += 1;
+                            chunkOffset.x += 1;
                             break;
                         case '3': // oikeeylä
                             break;
                     }
                     break;
                 case Side.Right:
-                    offset.z *= 2;
-                    offset.y *= 2;
+                    chunkOffset.z *= 2;
+                    chunkOffset.y *= 2;
                     switch (noiseType.quarter[i]) {
                         case '0': // vasenala
-                            offset.y += 1;
+                            chunkOffset.y += 1;
                             break;
                         case '1': // oikeeala
-                            offset.y += 1;
-                            offset.z += 1;
+                            chunkOffset.y += 1;
+                            chunkOffset.z += 1;
                             break;
                         case '2': // vasenylä
                             break;
                         case '3': // oikeeylä
-                            offset.z += 1;
+                            chunkOffset.z += 1;
                             break;
                     }
                     break;
                 case Side.Top:
-                    offset.x *= 2;
-                    offset.z *= 2;
+                    chunkOffset.x *= 2;
+                    chunkOffset.z *= 2;
                     switch (noiseType.quarter[i]) {
                         case '0': // vasenala
-                            offset.x += 1;
+                            chunkOffset.x += 1;
                             break;
                         case '1': // oikeeala
                             break;
                         case '2': // vasenylä
-                            offset.x += 1;
-                            offset.z += 1;
+                            chunkOffset.x += 1;
+                            chunkOffset.z += 1;
                             break;
                         case '3': // oikeeylä
-                            offset.z += 1;
+                            chunkOffset.z += 1;
                             break;
                     }
                     break;
                 case Side.Back:
-                    offset.x *= 2;
-                    offset.y *= 2;
+                    chunkOffset.x *= 2;
+                    chunkOffset.y *= 2;
                     switch (noiseType.quarter[i]) {
                         case '0': // vasenala
-                            offset.x += 1;
+                            chunkOffset.x += 1;
                             break;
                         case '1': // oikeeala
                             break;
                         case '2': // vasenylä
-                            offset.x += 1;
-                            offset.y += 1;
+                            chunkOffset.x += 1;
+                            chunkOffset.y += 1;
                             break;
                         case '3': // oikeeylä
-                            offset.y += 1;
+                            chunkOffset.y += 1;
                             break;
                     }
                     break;
@@ -714,20 +701,19 @@ public static class GPUNoiseGenerator {
 
 
 		// Noise Resolution
-		offset *= resolution;
+		chunkOffset *= resolution;
 
-
-		float freqMultiplier = 16f * (32f / resolution);
 
 		// Calculate noise map
 		shader.SetFloat("resolution", resolution);
-		shader.SetFloat("zoom", zoom);
+		shader.SetFloat("zoom", chunkZoom * zoom);
 		shader.SetFloat("Octaves", noiseType.octaves);
-		shader.SetFloat("Frequency", noiseType.frequency * freqMultiplier);
+		shader.SetFloat("Frequency", noiseType.frequency);
 		shader.SetFloat("Amplitude", noiseType.amplitude);
 		shader.SetFloat("Lacunarity", noiseType.lacunarity);
 		shader.SetFloat("Persistence", noiseType.persistence);
-		shader.SetVector("Offset", offset);
+		shader.SetVector("ChunkOffset", chunkOffset);
+		shader.SetVector("Offset", (Vector4)(offset != null ? offset : Vector3.zero));
 		shader.SetFloat("MaxNoiseHeight", noiseType.maxNoiseHeight);
 
 		shader.SetInt("joinBottom", joinBottom);
@@ -739,7 +725,7 @@ public static class GPUNoiseGenerator {
 		shader.SetInt("joinTop", joinTop);
 		shader.SetInt("joinTopB", joinTopB);
 		
-		shader.SetInt("meshGridSize", resolution);
+		shader.SetFloat("radius", planetRadius);
 
 
 		// FULL RESOLUTION HEIGHT MAP
@@ -778,7 +764,7 @@ public static class GPUNoiseGenerator {
 		buffer.SetData(heightMapArray);
 
 		// Dispatch Shader
-		int kernelIndex = shader.FindKernel("PerlinNoise" + kernelName + quarterName + "V");
+		int kernelIndex = shader.FindKernel(kernelName + quarterName);
 		shader.SetBuffer(kernelIndex, "buffer", buffer);
 		//shader.Dispatch(kernelIndex, size / 1024, 1, 1);
 

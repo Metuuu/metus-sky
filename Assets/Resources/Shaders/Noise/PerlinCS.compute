@@ -21,41 +21,55 @@
 //All rights reserved.
 //
 //Redistribution and use in source and binary forms, with or without
-//modification, are permitted provided that the following conditions are met: 
+//modification, are permitted provided that the following conditions are met:
 //
 //1. Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer. 
+//   list of conditions and the following disclaimer.
 //2. Redistributions in binary form must reproduce the above copyright notice,
 //   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution. 
+//   and/or other materials provided with the distribution.
 //
 
 //THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 //ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 //WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-//DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNERS OR CONTRIBUTORS BE LIABLE 
-//FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
-//DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
-//SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
-//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-//OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+//DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNERS OR CONTRIBUTORS BE LIABLE
+//FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+//DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+//SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+//OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 //OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.;
 
 
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel PerlinNoiseBottom
-#pragma kernel PerlinNoiseLeft
-#pragma kernel PerlinNoiseFront
-#pragma kernel PerlinNoiseRight
-#pragma kernel PerlinNoiseTop
-#pragma kernel PerlinNoiseBack
+#pragma kernel PerlinNoiseCubeBottomTex
+#pragma kernel PerlinNoiseCubeLeftTex
+#pragma kernel PerlinNoiseCubeFrontTex
+#pragma kernel PerlinNoiseCubeRightTex
+#pragma kernel PerlinNoiseCubeTopTex
+#pragma kernel PerlinNoiseCubeBackTex
 
-#pragma kernel PerlinNoiseBottomV
-#pragma kernel PerlinNoiseLeftV
-#pragma kernel PerlinNoiseFrontV
-#pragma kernel PerlinNoiseRightV
-#pragma kernel PerlinNoiseTopV
-#pragma kernel PerlinNoiseBackV
+#pragma kernel PerlinNoiseSphereBottomTex
+#pragma kernel PerlinNoiseSphereLeftTex
+#pragma kernel PerlinNoiseSphereFrontTex
+#pragma kernel PerlinNoiseSphereRightTex
+#pragma kernel PerlinNoiseSphereTopTex
+#pragma kernel PerlinNoiseSphereBackTex
+
+#pragma kernel PerlinNoiseCubeBottom
+#pragma kernel PerlinNoiseCubeLeft
+#pragma kernel PerlinNoiseCubeFront
+#pragma kernel PerlinNoiseCubeRight
+#pragma kernel PerlinNoiseCubeTop
+#pragma kernel PerlinNoiseCubeBack
+
+#pragma kernel PerlinNoiseSphereBottom
+#pragma kernel PerlinNoiseSphereLeft
+#pragma kernel PerlinNoiseSphereFront
+#pragma kernel PerlinNoiseSphereRight
+#pragma kernel PerlinNoiseSphereTop
+#pragma kernel PerlinNoiseSphereBack
 
 
 // Create a RenderTexture with enableRandomWrite flag and set it
@@ -68,8 +82,10 @@ float Frequency;
 float Amplitude;
 float Lacunarity;
 float Persistence;
-vector Offset = vector(0, 0, 0, 0);
+float3 Offset = float3(0, 0, 0);
+float3 ChunkOffset = float3(0, 0, 0);
 
+float radius;
 float resolution;
 float zoom;
 
@@ -86,7 +102,6 @@ int joinRightB;
 int joinTop;
 int joinTopB;
 
-int meshGridSize;
 
 //int joinArr[] = {
 //	joinBottom,
@@ -192,6 +207,23 @@ float PerlinNormal(float3 p, int octaves, float3 offset, float frequency, float 
 	{
 		float h = 0;
 		h = Perlin3D((p*(1/zoom) + offset) * frequency);
+		sum += h * amplitude;
+		frequency *= lacunarity;
+		amplitude *= persistence;
+	}
+	//return h + 0.5f;
+	//return sum + 0.5f;
+	return (sum)* maxNoiseHeight; // TODO: mitkä on perlin noise parametrien ranget esim (0-1) jne. koska kun laittaa paljon jotain niin result ei ole [-1, 1] väliltä vaan menee tosi suuriksi ja pieniksi
+	//return (sum + 1.0f) / 2.0f * maxNoiseHeight;
+}
+
+float PerlinNormalSphericalCube(float3 p, int octaves, float3 offset, float frequency, float amplitude, float lacunarity, float persistence, float maxNoiseHeight)
+{
+	float sum = 0;
+	for (int i = 0; i < octaves; ++i)
+	{
+		float h = 0;
+		h = Perlin3D((p + offset) * frequency);
 		sum += h*amplitude;
 		frequency *= lacunarity;
 		amplitude *= persistence;
@@ -203,71 +235,29 @@ float PerlinNormal(float3 p, int octaves, float3 offset, float frequency, float 
 }
 
 
-// TODO: Calculate with 𝜋
-
-
-
-// ----------------  RENDER TEXTURE ---------------- \\
-
-[numthreads(32, 32, 1)]
-void PerlinNoiseBottom(uint2 id : SV_DispatchThreadID)
+// Cube to sphere position transform
+float3 CubeToSphere(float3 pos, float3 offset)
 {
-	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, 0, id.y + Offset.z), Octaves, float3(0, resolution, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-}
-
-[numthreads(32, 32, 1)]
-void PerlinNoiseLeft(uint2 id : SV_DispatchThreadID)
-{
-	tex[id.xy] = PerlinNormal(float3(0, id.y + Offset.y, id.x + Offset.z), Octaves, float3(resolution, 0, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-}
-
-[numthreads(32, 32, 1)]
-void PerlinNoiseFront(uint2 id : SV_DispatchThreadID)
-{
-	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, id.y + Offset.y, 0), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-}
-
-[numthreads(32, 32, 1)]
-void PerlinNoiseRight(uint2 id : SV_DispatchThreadID)
-{
-	tex[id.xy] = PerlinNormal(float3(0, id.y + Offset.y, resolution-id.x + Offset.z), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-}
-
-[numthreads(32, 32, 1)]
-void PerlinNoiseTop(uint2 id : SV_DispatchThreadID)
-{
-	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, 0, resolution-id.y + Offset.z), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
-}
-
-[numthreads(32, 32, 1)]
-void PerlinNoiseBack(uint2 id : SV_DispatchThreadID)
-{
-	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, resolution-id.y + Offset.y, 0), Octaves, float3(0,0, resolution), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+	float3 v = (pos + ChunkOffset) * 2 / (resolution * zoom)
+		+ (offset) * 2 / (resolution)
+		- float3(1, 1, 1);
+	//float3 v = (pos + (zoom - 1)*resolution + ChunkOffset) * 2 / (resolution) - float3(1, 1, 1);
+	//float3 v = pos * 2 / resolution - float3(1, 1, 1);
+	return normalize(v) * radius;
 }
 
 
-
-
-// ----------------  FLOAT ARRAY ---------------- \\
-
-
-// FIXME: borders do not match in different resolutions always. (the lower the resolution the upper left the noise will go. fix that)
-// TODO: load only points for mesh collider and generate textures via shader with render texture ?
-
+// Fix borders to match with adjacent
 float3 Join(int enabled, float3 joinPos, uint XorY, float3 extraOffset = float3(0, 0, 0)) {
 	return enabled * floor(((joinPos - 1) * -0.5 * (resolution - 1) + XorY * joinPos) / (resolution - 1)) * joinPos + extraOffset;
 }
 
 
+// ---- POSITIOS ----
+
 // Bottom
-float3 BottomXPos(float x) {
-	return x * float3(1, 0, 0);
-}
-float3 BottomYPos(float y) {
-	return y * float3(0, 0, 1);
-}
-float3 BottomOffset() {
-	return float3(Offset.x, 0, Offset.z);
+float3 BottomPos(float x, float y) {
+	return float3(x, 0, y);
 }
 float3 BottomJBottom() {
 	return float3(0, 0, 1);
@@ -277,14 +267,8 @@ float3 BottomJRight() {
 }
 
 // Left
-float3 LeftXPos(float x) {
-	return x * float3(0, 0, 1);
-}
-float3 LeftYPos(float y) {
-	return y * float3(0, 1, 0);
-}
-float3 LeftOffset() {
-	return float3(0, Offset.y, Offset.z);
+float3 LeftPos(float x, float y) {
+	return float3(0, y, x);
 }
 float3 LeftJRightB() {
 	return float3(0, 0, 0);
@@ -301,14 +285,8 @@ float3 LeftJBottomB() {
 }
 
 // Front
-float3 FrontXPos(float x) {
-	return x * float3(1, 0, 0);
-}
-float3 FrontYPos(float y) {
-	return y * float3(0, 1, 0);
-}
-float3 FrontOffset() {
-	return float3(Offset.x, Offset.y, 0);
+float3 FrontPos(float x, float y) {
+	return float3(x, y, 0);
 }
 float3 frontJBottom() {
 	return float3(0, 1, 0);
@@ -321,14 +299,8 @@ float3 frontJRight() {
 }
 
 // Right
-float3 RightXPos(float x) {
-	return x * float3(0, 0, 1);
-}
-float3 RightYPos(float y) {
-	return y * float3(0, 1, 0);
-}
-float3 RightOffset() {
-	return float3(0, Offset.y, Offset.z);
+float3 RightPos(float x, float y) {
+	return float3(0, y, x);
 }
 float3 RightJLeftB() {
 	return float3(0, 0, 0);
@@ -348,14 +320,8 @@ float3 RightJBottomB() {
 
 
 // Top
-float3 TopXPos() {
-	return float3(1, 0, 0);
-}
-float3 TopYPos() {
-	return float3(0, 0, 1);
-}
-float3 TopOffset() {
-	return float3(Offset.x, 0, Offset.z);
+float3 TopPos(float x, float y) {
+	return float3(x, 0, y);
 }
 float3 TopJTopB() {
 	return float3(0, 0, 0);
@@ -380,14 +346,8 @@ float3 TopJBottomB() {
 }
 
 // BACK
-float3 BackXPos(float x) {
-	return x * float3(1, 0, 0);
-}
-float3 BackYPos(float y) {
-	return y * float3(0, 1, 0);
-}
-float3 BackOffset() {
-	return float3(Offset.x, Offset.y, 0);
+float3 BackPos(float x, float y) {
+	return float3(x, y, 0);
 }
 float3 BackJTopB() {
 	return float3(0, 0, 0);
@@ -398,8 +358,7 @@ float3 BackJLeftB() {
 	//return float3(0, 0, -1);
 }
 float3 BackJRight() {
-	return float3(0, 0, 0);
-	//return float3(-1, 0, 0);
+	return float3(-1, 0, 0);
 	//return float3(-1, 0, 0);
 }
 float3 BackJRightB() {
@@ -412,24 +371,227 @@ float3 BackJBottom() {
 }
 
 
-// --
-
 
 // BOTTOM
-float3 getBottomPosition(uint2 id, int posMultiplier) {
-	int x = id.x * posMultiplier;
-	int y = id.y * posMultiplier;
+float3 getSphereBottomPosition(uint2 id) {
+	int x = id.x;
+	int y = id.y;
 	float3 R = Join(joinRight, BottomJRight(), x);
 	float3 B = Join(joinBottom, BottomJBottom(), y);
-	return BottomXPos(x) + BottomYPos(y) + BottomOffset() + R + B;
+	return CubeToSphere(BottomPos(x, y) + R + B, float3(0, resolution - 1, 0));
 }
+float3 getCubeBottomPosition(uint2 id) {
+	int x = id.x;
+	int y = id.y;
+	float3 R = Join(joinRight, BottomJRight(), x);
+	float3 B = Join(joinBottom, BottomJBottom(), y);
+	return BottomPos(x, y) + ChunkOffset + R + B;
+}
+// LEFT
+float3 getSphereLeftPosition(uint2 id) {
+	int x = id.x;
+	int y = id.y;
+	float3 R = Join(joinRight, LeftJRight(), x);
+	float3 RB = Join(joinRightB, LeftJRightB(), x);
+	float3 B = Join(joinBottom, LeftJBottom(), y);
+	float3 BB = Join(joinBottomB, LeftJBottomB(), y);
+	return CubeToSphere(LeftPos(x, y) + R + RB + B + BB, float3(resolution - 1, 0, 0));
+}
+float3 getCubeLeftPosition(uint2 id) {
+	int x = id.x;
+	int y = id.y;
+	float3 R = Join(joinRight, LeftJRight(), x);
+	float3 RB = Join(joinRightB, LeftJRightB(), x);
+	float3 B = Join(joinBottom, LeftJBottom(), y);
+	float3 BB = Join(joinBottomB, LeftJBottomB(), y);
+	return LeftPos(x, y) + ChunkOffset + R + RB + B + BB;
+}
+// FRONT
+float3 getSphereFrontPosition(uint2 id) {
+	int x = id.x;
+	int y = id.y;
+	float3 rj = Join(joinRight, frontJRight(), x);
+	float3 bj = Join(joinBottom, frontJBottom(), y);
+	float3 bjB = Join(joinBottomB, frontJBottomB(), y);
+	return CubeToSphere(FrontPos(x, y) + rj + bj + bjB, float3(0, 0, 0));
+}
+float3 getCubeFrontPosition(uint2 id) {
+	int x = id.x;
+	int y = id.y;
+	float3 rj = Join(joinRight, frontJRight(), x);
+	float3 bj = Join(joinBottom, frontJBottom(), y);
+	float3 bjB = Join(joinBottomB, frontJBottomB(), y);
+	return FrontPos(x, y) + ChunkOffset + rj + bj + bjB;
+}
+// RIGHT
+float3 getSphereRightPosition(uint2 id) {
+	int x = resolution - id.x - 1;
+	int y = id.y;
+	float3 R = Join(joinRight, RightJRight(), x);
+	float3 LB = Join(joinLeftB, RightJLeftB(), x);
+	float3 B = Join(joinBottom, RightJBottom(), y);
+	float3 BB = Join(joinBottomB, RightJBottomB(), y);
+	return CubeToSphere(RightPos(x, y) + R + LB + B + BB, float3(0, 0, 0));
+}
+float3 getCubeRightPosition(uint2 id) {
+	int x = resolution - id.x - 1;
+	int y = id.y;
+	float3 R = Join(joinRight, RightJRight(), x);
+	float3 LB = Join(joinLeftB, RightJLeftB(), x);
+	float3 B = Join(joinBottom, RightJBottom(), y);
+	float3 BB = Join(joinBottomB, RightJBottomB(), y);
+	return RightPos(x, y) + ChunkOffset + R + LB + B + BB;
+}
+// TOP
+float3 getSphereTopPosition(uint2 id) {
+	int x = id.x;
+	int y = resolution - id.y - 1;
+	float3 TB = Join(joinTopB, TopJTopB(), y);
+	float3 R = Join(joinRight, TopJRight(), x);
+	float3 RB = Join(joinRightB, TopJRightB(), x);
+	float3 LB = Join(joinLeftB, TopJLeftB(), x);
+	float3 B = Join(joinBottom, TopJBottom(), y);
+	float3 BB = Join(joinBottomB, TopJBottomB(), y);
+	return CubeToSphere(TopPos(x, y) + TB + R + RB + LB + B + BB, float3(0, 0, 0));
+}
+float3 getCubeTopPosition(uint2 id) {
+	int x = id.x;
+	int y = resolution - id.y - 1;
+	float3 TB = Join(joinTopB, TopJTopB(), y);
+	float3 R = Join(joinRight, TopJRight(), x);
+	float3 RB = Join(joinRightB, TopJRightB(), x);
+	float3 LB = Join(joinLeftB, TopJLeftB(), x);
+	float3 B = Join(joinBottom, TopJBottom(), y);
+	float3 BB = Join(joinBottomB, TopJBottomB(), y);
+	return TopPos(x, y) + ChunkOffset + TB + R + RB + LB + B + BB;
+}
+// BACK
+float3 getSphereBackPosition(uint2 id) {
+	int x = id.x;
+	int y = resolution - id.y - 1;
+	float3 TB = Join(joinTopB, BackJTopB(), y);
+	float3 R = Join(joinRight, BackJRight(), x);
+	float3 RB = Join(joinRightB, BackJRightB(), x);
+	float3 LB = Join(joinLeftB, BackJLeftB(), x);
+	float3 B = Join(joinBottom, BackJBottom(), y);
+	return CubeToSphere(BackPos(x, y) + TB + R + RB + LB + B, float3(0, 0, resolution - 1));
+}
+float3 getCubeBackPosition(uint2 id) {
+	int x = id.x;
+	int y = resolution - id.y - 1;
+	float3 TB = Join(joinTopB, BackJTopB(), y);
+	float3 R = Join(joinRight, BackJRight(), x);
+	float3 RB = Join(joinRightB, BackJRightB(), x);
+	float3 LB = Join(joinLeftB, BackJLeftB(), x);
+	float3 B = Join(joinBottom, BackJBottom(), y);
+	return BackPos(x, y) + ChunkOffset + TB + R + RB + LB + B;
+}
+
+
+
+
+// ----------------  RENDER TEXTURE ---------------- \\
+
+
+// ---------------- CUBE ----------------
+
 [numthreads(32, 32, 1)]
-void PerlinNoiseBottomV(uint2 id : SV_DispatchThreadID)
+void PerlinNoiseCubeBottomTex(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, 0, id.y + Offset.z), Octaves, float3(0, resolution, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseCubeLeftTex(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(0, id.y + Offset.y, id.x + Offset.z), Octaves, float3(resolution, 0, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseCubeFrontTex(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, id.y + Offset.y, 0), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseCubeRightTex(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(0, id.y + Offset.y, resolution - id.x + Offset.z), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseCubeTopTex(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, 0, resolution - id.y + Offset.z), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseCubeBackTex(uint2 id : SV_DispatchThreadID)
+{
+	tex[id.xy] = PerlinNormal(float3(id.x + Offset.x, resolution - id.y + Offset.y, 0), Octaves, float3(0, 0, resolution), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+// ---------------- SPHERE ----------------
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereBottomTex(uint2 id : SV_DispatchThreadID)
+{
+	float3 position = getSphereBottomPosition(id);
+	tex[id.xy] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereLeftTex(uint2 id : SV_DispatchThreadID)
+{
+	float3 position = getSphereLeftPosition(id);
+	tex[id.xy] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereFrontTex(uint2 id : SV_DispatchThreadID)
+{
+	float3 position = getSphereFrontPosition(id);
+	tex[id.xy] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereRightTex(uint2 id : SV_DispatchThreadID)
+{
+	float3 position = getSphereRightPosition(id);
+	tex[id.xy] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereTopTex(uint2 id : SV_DispatchThreadID)
+{
+	float3 position = getSphereTopPosition(id);
+	tex[id.xy] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereBackTex(uint2 id : SV_DispatchThreadID)
+{
+	float3 position = getSphereBackPosition(id);
+	tex[id.xy] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+
+// ----------------  FLOAT ARRAY ---------------- \\
+
+
+// ---------------- CUBE ----------------
+
+// BOTTOM
+[numthreads(32, 32, 1)]
+void PerlinNoiseCubeBottom(uint2 id : SV_DispatchThreadID)
 {
 	uint structs;
 	uint stride;
 
-	float3 position = getBottomPosition(id, resolution / meshGridSize);
+	float3 position = getCubeBottomPosition(id);
 
 	buffer.GetDimensions(structs, stride);
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, float3(0, resolution - 1, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
@@ -437,22 +599,13 @@ void PerlinNoiseBottomV(uint2 id : SV_DispatchThreadID)
 
 
 // LEFT
-float3 getLeftPosition(uint2 id, int posMultiplier) {
-	int x = id.x * posMultiplier;
-	int y = id.y * posMultiplier;
-	float3 R = Join(joinRight, LeftJRight(), x);
-	float3 RB = Join(joinRightB, LeftJRightB(), x);
-	float3 B = Join(joinBottom, LeftJBottom(), y);
-	float3 BB = Join(joinBottomB, LeftJBottomB(), y);
-	return LeftXPos(x) + LeftYPos(y) + LeftOffset() + R + RB + B + BB;
-}
 [numthreads(32, 32, 1)]
-void PerlinNoiseLeftV(uint2 id : SV_DispatchThreadID)
+void PerlinNoiseCubeLeft(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
     uint stride;
 
-	float3 position = getLeftPosition(id, resolution / meshGridSize);
+	float3 position = getCubeLeftPosition(id);
 
 	buffer.GetDimensions(structs, stride);
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, float3(resolution - 1, 0, 0), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
@@ -460,16 +613,8 @@ void PerlinNoiseLeftV(uint2 id : SV_DispatchThreadID)
 
 
 // FRONT
-float3 getFrontPosition(uint2 id, int posMultiplier) {
-	int x = id.x * posMultiplier;
-	int y = id.y * posMultiplier;
-	float3 rj = Join(joinRight, frontJRight(), x);
-	float3 bj = Join(joinBottom, frontJBottom(), y);
-	float3 bjB = Join(joinBottomB, frontJBottomB(), y);
-	return FrontXPos(x) + FrontYPos(y) + FrontOffset() + rj + bj + bjB;
-}
 [numthreads(32, 32, 1)]
-void PerlinNoiseFrontV(uint2 id : SV_DispatchThreadID)
+void PerlinNoiseCubeFront(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
     uint stride;
@@ -482,14 +627,14 @@ void PerlinNoiseFrontV(uint2 id : SV_DispatchThreadID)
 	//-1 + 1 = 0;
 	//(frontJRight() + 1) / 2 = 0
 	// 1 - 1 = 0
-	// -1 - 1 = -2 
+	// -1 - 1 = -2
 	//(frontJRight() - 1) * -0.5 = 1
-	
+
 
 	//float3 rj = joinRight * floor(((frontJRight() - 1) * -0.5 * (resolution - 1) + X * frontJRight()) / (resolution - 1)) * frontJRight();
 	//float3 bj = joinBottom * floor(((frontJBottom() - 1) * -0.5 * (resolution - 1) + Y * frontJBottom()) / (resolution - 1)) * frontJBottom();
 	//float3 bjB = joinBottomB * floor(((frontJBottomB() - 1) * -0.5 * (resolution - 1) + Y * frontJBottomB()) / (resolution - 1)) * frontJBottomB();
-	
+
 
 	//int bj = joinBottom * floor(id.y / (resolution - 1));
 	//int bjB = joinBottomB * floor(id.y / (resolution - 1));
@@ -497,29 +642,20 @@ void PerlinNoiseFrontV(uint2 id : SV_DispatchThreadID)
 
 	//buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(float3(id.x + Offset.x - rj, id.y + Offset.y + bj + bjB, 0), Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 
-	float3 position = getFrontPosition(id, resolution / meshGridSize);
+	float3 position = getCubeFrontPosition(id);
 	buffer.GetDimensions(structs, stride);
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }
 
 
 // RIGHT
-float3 getRightPosition(uint2 id, int posMultiplier) {
-	int x = resolution - id.x * posMultiplier - 1;
-	int y = id.y * posMultiplier;
-	float3 R = Join(joinRight, RightJRight(), x);
-	float3 LB = Join(joinLeftB, RightJLeftB(), x);
-	float3 B = Join(joinBottom, RightJBottom(), y);
-	float3 BB = Join(joinBottomB, RightJBottomB(), y);
-	return RightXPos(x) + RightYPos(y) + RightOffset() + R + LB + B + BB;
-}
 [numthreads(32, 32, 1)]
-void PerlinNoiseRightV(uint2 id : SV_DispatchThreadID)
+void PerlinNoiseCubeRight(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
     uint stride;
 
-	float3 position = getRightPosition(id, resolution / meshGridSize);
+	float3 position = getCubeRightPosition(id);
 
 	buffer.GetDimensions(structs, stride);
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
@@ -527,24 +663,13 @@ void PerlinNoiseRightV(uint2 id : SV_DispatchThreadID)
 
 
 // TOP
-float3 getTopPosition(uint2 id, int posMultiplier) {
-	int x = id.x * posMultiplier;
-	int y = resolution - id.y * posMultiplier - 1;
-	float3 TB = Join(joinTopB, TopJTopB(), y);
-	float3 R = Join(joinRight, TopJRight(), x);
-	float3 RB = Join(joinRightB, TopJRightB(), x);
-	float3 LB = Join(joinLeftB, TopJLeftB(), x);
-	float3 B = Join(joinBottom, TopJBottom(), y);
-	float3 BB = Join(joinBottomB, TopJBottomB(), y);
-	return x * TopXPos() + y * TopYPos() + TopOffset() + TB + R + RB + LB + B + BB;
-}
 [numthreads(32, 32, 1)]
-void PerlinNoiseTopV(uint2 id : SV_DispatchThreadID)
+void PerlinNoiseCubeTop(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
     uint stride;
 
-	float3 position = getTopPosition(id, resolution / meshGridSize);
+	float3 position = getCubeTopPosition(id);
 
 	buffer.GetDimensions(structs, stride);
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, 0, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
@@ -552,24 +677,101 @@ void PerlinNoiseTopV(uint2 id : SV_DispatchThreadID)
 
 
 // BACK
-float3 getBackPosition(uint2 id, int posMultiplier) {
-	int x = id.x * posMultiplier;
-	int y = resolution - id.y * posMultiplier - 1;
-	float3 TB = Join(joinTopB, BackJTopB(), y);
-	float3 R = Join(joinRight, BackJRight(), x);
-	float3 RB = Join(joinRightB, BackJRightB(), x);
-	float3 LB = Join(joinLeftB, BackJLeftB(), x);
-	float3 B = Join(joinBottom, BackJBottom(), y);
-	return BackXPos(x) + BackYPos(y) + BackOffset() + TB + R + RB + LB + B;
-}
 [numthreads(32, 32, 1)]
-void PerlinNoiseBackV(uint2 id : SV_DispatchThreadID)
+void PerlinNoiseCubeBack(uint2 id : SV_DispatchThreadID)
 {
     uint structs;
     uint stride;
 
-	float3 position = getBackPosition(id, resolution / meshGridSize);
+	float3 position = getCubeBackPosition(id);
 
 	buffer.GetDimensions(structs, stride);
 	buffer[id.x + id.y * sqrt(structs)] = PerlinNormal(position, Octaves, float3(0, 0, resolution-1), Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+
+
+// ---------------- SPHERE ----------------
+
+// BOTTOM
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereBottom(uint2 id : SV_DispatchThreadID)
+{
+	uint structs;
+	uint stride;
+
+	float3 position = getSphereBottomPosition(id);
+
+	buffer.GetDimensions(structs, stride);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+// LEFT
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereLeft(uint2 id : SV_DispatchThreadID)
+{
+	uint structs;
+	uint stride;
+
+	float3 position = getSphereLeftPosition(id);
+
+	buffer.GetDimensions(structs, stride);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+// FRONT
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereFront(uint2 id : SV_DispatchThreadID)
+{
+	uint structs;
+	uint stride;
+
+	float3 position = getSphereFrontPosition(id);
+	buffer.GetDimensions(structs, stride);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+// RIGHT
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereRight(uint2 id : SV_DispatchThreadID)
+{
+	uint structs;
+	uint stride;
+
+	float3 position = getSphereRightPosition(id);
+
+	buffer.GetDimensions(structs, stride);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+// TOP
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereTop(uint2 id : SV_DispatchThreadID)
+{
+	uint structs;
+	uint stride;
+
+	float3 position = getSphereTopPosition(id);
+
+	buffer.GetDimensions(structs, stride);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
+}
+
+
+// BACK
+[numthreads(32, 32, 1)]
+void PerlinNoiseSphereBack(uint2 id : SV_DispatchThreadID)
+{
+	uint structs;
+	uint stride;
+
+	float3 position = getSphereBackPosition(id);
+
+	buffer.GetDimensions(structs, stride);
+	buffer[id.x + id.y * sqrt(structs)] = PerlinNormalSphericalCube(position, Octaves, Offset, Frequency, Amplitude, Lacunarity, Persistence, MaxNoiseHeight);
 }

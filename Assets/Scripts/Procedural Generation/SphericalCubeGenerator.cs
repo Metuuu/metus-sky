@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
-using System.Linq;
+using System.Collections.Generic;
 
 
 
@@ -31,7 +32,7 @@ public static class SphericalCubeGenerator {
         System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
         sw.Start();
         */
-        sideMeshes[getArrayPosition("0")] = GenerateSphericalMesh("0", QualitySettings.CurrentLOD.gridSize[0]);
+        sideMeshes[getArrayPositionMemoized("0")] = GenerateSphericalMesh("0", QualitySettings.CurrentLOD.gridSize[0]);
         GenerateAllMeshDataRecursively(QualitySettings.CurrentLOD.LodsCount, 0, "0"); // TODO: halutaanko ladata aina vaan kaikki, että voi aina suoraan hakea osoitteella meshit ja positionit ettei tarttee erillisen methodin kautta
 
         /*Debug.Log(sw.ElapsedMilliseconds);
@@ -44,7 +45,7 @@ public static class SphericalCubeGenerator {
     // Get Mesh
     public static Mesh GetMesh(int gridSize, string side = "") { // HUOM ! GRID SIZEn pitää olla jaollinen quarterilla tai jotain sinnepäin
         
-        int arrayPos = getArrayPosition(side);
+        int arrayPos = getArrayPositionMemoized(side);
         if (sideMeshes[arrayPos] != null) {
             return sideMeshes[arrayPos];
         }
@@ -57,23 +58,23 @@ public static class SphericalCubeGenerator {
 
 	// Get Middle Vertice Position
 	public static Vector3 getMiddleVerticePosition(string side) {
-		int pos = getArrayPosition(side);
+		int pos = getArrayPositionMemoized(side);
 		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[sideMeshes[pos].vertexCount / 2];
 	}
 	public static Vector3 getLBottomVerticePosition(string side) {
-		int pos = getArrayPosition(side);
+		int pos = getArrayPositionMemoized(side);
 		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[0];
 	}
 	public static Vector3 getRBottomVerticePosition(string side) {
-		int pos = getArrayPosition(side);
+		int pos = getArrayPositionMemoized(side);
 		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[(int)Mathf.Sqrt(sideMeshes[pos].vertexCount - 1)];
 	}
 	public static Vector3 getLTopVerticePosition(string side) {
-		int pos = getArrayPosition(side);
+		int pos = getArrayPositionMemoized(side);
 		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[(sideMeshes[pos].vertexCount-1) - (int)Mathf.Sqrt(sideMeshes[pos].vertexCount-1)];
 	}
 	public static Vector3 getRTopVerticePosition(string side) {
-		int pos = getArrayPosition(side);
+		int pos = getArrayPositionMemoized(side);
 		return sideRotations[(int)char.GetNumericValue(side[0])] * sideMeshes[pos].vertices[sideMeshes[pos].vertexCount-1];
 	}
 
@@ -86,7 +87,7 @@ public static class SphericalCubeGenerator {
                 if (currentLevel != quarterQualityLevels - 1) {
                     GenerateAllMeshDataRecursively(quarterQualityLevels, currentLevel + 1, side + i);
                 }
-                int position = getArrayPosition(side + i);
+                int position = getArrayPositionMemoized(side + i);
                 sideMeshes[position] = GenerateSphericalMesh(side + i, QualitySettings.CurrentLOD.gridSize[currentLevel]);
                 Vector3[] vertices = sideMeshes[position].vertices;
                 middleVerticePositions[position] = vertices[vertices.Length / 2];
@@ -97,95 +98,95 @@ public static class SphericalCubeGenerator {
     }
 
 
-     
-
-    // - Generate Spherical cube side mesh -
-    static Mesh GenerateSphericalMesh(string side, int gridSize) {
-
-        float radius = 0.5f;
-        int xSize = gridSize;
-        int ySize = gridSize;
-
-        Vector3[] vertices;
-        Vector3[] normals;
-        int[] triangles;
-        Vector2[] uvs;
-
-        vertices = new Vector3[(gridSize + 1) * (gridSize + 1)];
-        uvs = new Vector2[vertices.Length];
-        triangles = new int[(gridSize - 1) * (gridSize - 1) * 6];
-        normals = new Vector3[vertices.Length];
-
-        
-        // Laskee kertoimen että saa oikeen paikan quarterin
-        Vector3 quarterVec3 = Vector3.zero;
-
-        // Huom! Eka kirjain on sivu ja muut quartereja eli eka numero ollaan tässä huomiotta
-        int len = side.Length - 1;
 
 
-        // Calculate side
-        int c, kerroin;
-        int zAkseli = -2 * (-1 + (int)Mathf.Pow(2, len));
+	// - Generate Spherical cube side mesh -
+	static Mesh GenerateSphericalMesh(string side, int gridSize) {
 
-        for (int index = 0; index < len; ++index) {
-            c = (int)char.GetNumericValue(side[index + 1]);
-            kerroin = (int)Mathf.Pow(2, len - index);
+		float radius = 0.5f;
+		int xSize = gridSize;
+		int ySize = gridSize;
 
-            quarterVec3 += new Vector3(osanKoordinaatit[c].x * kerroin, osanKoordinaatit[c].y * kerroin);
+		Vector3[] vertices;
+		Vector3[] normals;
+		int[] triangles;
+		Vector2[] uvs;
 
-        }
-
-        quarterVec3 = new Vector3(quarterVec3.x / 2 + 1, quarterVec3.y / 2 + 1, zAkseli / 2 + 1);
-
-        // Create vertices
-        int v = -1;
-        for (int y = 0; y <= gridSize; ++y) {
-            for (int x = 0; x <= gridSize; ++x) {
-
-                Vector3 vec = new Vector3(x, y, gridSize) * 2f / gridSize - quarterVec3;
-                normals[++v] = -vec.normalized;
-                vertices[v] = normals[v] * radius;
-                uvs[v] = new Vector2(x, y);
-                
-            }
-        }
+		vertices = new Vector3[(gridSize + 1) * (gridSize + 1)];
+		uvs = new Vector2[vertices.Length];
+		triangles = new int[(gridSize - 1) * (gridSize - 1) * 6];
+		normals = new Vector3[vertices.Length];
 
 
-        // Create triangles
-        triangles = new int[xSize * ySize * 6];
-        for (int ti = 0, vi = 0, y = 0; y < ySize; ++y, ++vi) {
-            for (int x = 0; x < xSize; ++x, ti += 6, ++vi) {
-                triangles[ti] = vi;
-                triangles[ti + 3] = triangles[ti + 2] = vi + 1;
-                triangles[ti + 4] = triangles[ti + 1] = vi + xSize + 1;
-                triangles[ti + 5] = vi + xSize + 2;
-            }
-        }
+		// Laskee kertoimen että saa oikeen paikan quarterin
+		Vector3 quarterVec3 = Vector3.zero;
+
+		// Huom! Eka kirjain on sivu ja muut quartereja eli eka numero ollaan tässä huomiotta
+		int len = side.Length - 1;
+
+
+		// Calculate side
+		int c, kerroin;
+		int zAkseli = -2 * (-1 + (int)Mathf.Pow(2, len));
+
+		for (int index = 0; index < len; ++index) {
+			c = (int)char.GetNumericValue(side[index + 1]);
+			kerroin = (int)Mathf.Pow(2, len - index);
+
+			quarterVec3 += new Vector3(osanKoordinaatit[c].x * kerroin, osanKoordinaatit[c].y * kerroin);
+
+		}
+
+		quarterVec3 = new Vector3(quarterVec3.x / 2 + 1, quarterVec3.y / 2 + 1, zAkseli / 2 + 1);
+
+		// Create vertices
+		int v = -1;
+		for (int y = 0; y <= gridSize; ++y) {
+			for (int x = 0; x <= gridSize; ++x) {
+
+				Vector3 vec = new Vector3(x, y, gridSize) * 2f / gridSize - quarterVec3;
+				normals[++v] = -vec.normalized;
+				vertices[v] = normals[v] * radius;
+				uvs[v] = new Vector2(x, y);
+
+			}
+		}
+
+
+		// Create triangles
+		triangles = new int[xSize * ySize * 6];
+		for (int ti = 0, vi = 0, y = 0; y < ySize; ++y, ++vi) {
+			for (int x = 0; x < xSize; ++x, ti += 6, ++vi) {
+				triangles[ti] = vi;
+				triangles[ti + 3] = triangles[ti + 2] = vi + 1;
+				triangles[ti + 4] = triangles[ti + 1] = vi + xSize + 1;
+				triangles[ti + 5] = vi + xSize + 2;
+			}
+		}
 
 
 		// Create mesh
-        Mesh mesh = new Mesh {
-            name = side,
-            vertices = vertices,
-            triangles = triangles,
-            normals = normals,
-            uv = uvs
-        };
-
-        return mesh;
-
-    }
-
+		Mesh mesh = new Mesh {
+			name = side,
+			vertices = vertices,
+			triangles = triangles,
+			normals = normals,
+			uv = uvs
+		};
+		
+		return mesh;
+	}
 
 
 
-    // Antaa array positionin nimestä
-    private static int getArrayPosition(string side) {
+	// Antaa array positionin nimestä
+
+
+	public static int getArrayPosition(string side) {
         int pos = 0, len = side.Length;
 
-        // Quarters
-        for (int i = 1; i < len; ++i) {
+		// Quarters
+		for (int i = 1; i < len; ++i) {
             switch (side[i]) {
                 case '0': // vasenala
                     pos += (int)Mathf.Pow(4, i - 1);
@@ -204,13 +205,10 @@ public static class SphericalCubeGenerator {
 
         return pos;
     }
+	public static Func<string, int>getArrayPositionMemoized = ExtensionMethods.Memoize<string, int>(getArrayPosition);
 
 
-
-
-
-
-
+	
 
     // tee custom sized grid cube joskus ehkä esim asteroideihin
     /*public static SphereMeshData GenerateCube(string name, float xSize, float ySize, float zSize, int gridSize) {
@@ -226,14 +224,7 @@ public static class SphericalCubeGenerator {
     */
 
 
-
-
-
-
-
-
-
-
+		
 
 
     // TODO: täällä on paljon arvokasta dataa jota pitää vielä hyödyntää, mutta en halunnu että pitää tehä erillinen objecti kun meshiä luodaan

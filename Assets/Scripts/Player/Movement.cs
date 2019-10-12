@@ -68,14 +68,14 @@ public class Movement : MonoBehaviour {
     private float fudgeCheck;
     private float bottomCapsuleSphereOrigin; // transform.position.y - this variable = the y coord for the origin of the capsule's bottom sphere
     private float capsuleRadius;
-    
-
-    #endregion
 
 
+	#endregion
 
-    // --- Start ---
-    void Start () {
+
+
+	// --- Awake ---
+	void Awake () {
         rb = Character.RigidBody;
         transform = Character.Transform;
         PLDir = GetComponent<PlanetLocalDirections>();

@@ -253,7 +253,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.21
   maxNoiseHeight: 1
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 64
   gridSize: 24
@@ -363,7 +364,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.21
   maxNoiseHeight: 1
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 64
   gridSize: 24
@@ -473,7 +475,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.25
   maxNoiseHeight: 0.3
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 512
   gridSize: 128
@@ -583,7 +586,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.25
   maxNoiseHeight: 0.3
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 512
   gridSize: 128
@@ -647,7 +651,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 253388915}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -20, y: -40, z: 0}
+  m_LocalPosition: {x: -60, y: -40, z: 40}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_Children: []
   m_Father: {fileID: 0}
@@ -693,7 +697,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.25
   maxNoiseHeight: 0.3
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 512
   gridSize: 128
@@ -803,7 +808,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.21
   maxNoiseHeight: 1
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 64
   gridSize: 24
@@ -913,7 +919,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.25
   maxNoiseHeight: 0.3
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 512
   gridSize: 128
@@ -1023,7 +1030,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.21
   maxNoiseHeight: 1
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 64
   gridSize: 24
@@ -1133,7 +1141,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.21
   maxNoiseHeight: 1
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 64
   gridSize: 24
@@ -1243,7 +1252,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.25
   maxNoiseHeight: 0.3
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 512
   gridSize: 128
@@ -1353,7 +1363,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.25
   maxNoiseHeight: 0.3
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 512
   gridSize: 128
@@ -1463,7 +1474,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.17
   maxNoiseHeight: 0.3
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 120
   gridSize: 32
@@ -1587,7 +1599,8 @@ MonoBehaviour:
   persistance: 3
   lacunarity: 0.21
   maxNoiseHeight: 1
-  offset: {x: 0, y: 0}
+  offset: {x: 0, y: 0, z: 0}
+  zoom: 1
   noiseScale: 1
   noiseResolution: 64
   gridSize: 24

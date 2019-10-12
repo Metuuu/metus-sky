@@ -134,19 +134,20 @@ public class GPUPlanetData {
 	}*/
 
 	// Generate Planet LOD
-	public GameObject GeneratePlanetChunk(int gridSize, Vector3 position, ref List<RenderTexture> renderTextureList, bool hasHeight, bool hasCollider, string side = "") {
+	public Tuple<GameObject, List<RenderTexture>> GeneratePlanetChunk(int gridSize, Vector3 position, bool hasHeight, bool hasCollider, string side = "") {
 
 		string name = "";
 		Vector2 rotation = Vector3.zero;
 		Mesh chunkMesh = null;
 		Material[] materials;
 		float[][,] heightMaps;
+		List<RenderTexture> renderTextureList;
 
 		// Jos full niin pitää kaikki sivut generoida
 		if (side[0] == 'F') {
 			name = "F";
 			// TODO: LOD Full planet generation jos ees haluun sitä
-			return new GameObject(side);
+			return Tuple.Create(new GameObject(side), new List<RenderTexture>());
 		}
 		// Generoidaan yksi sivu tai quarter
 		else {
@@ -208,8 +209,8 @@ public class GPUPlanetData {
 			switch (noiseSource) {
 				case Noise.NoiseSource.GPU_2DFloatArray:
 					oceanHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, ocean, gridSize);
-					plainHillsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, plainHills, gridSize);
-					largeMountainsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, largeMountains, gridSize);
+					plainHillsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, plainHills, radius, gridSize);
+					largeMountainsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, largeMountains, radius, gridSize);
 					mediumDetailHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, mediumDetail, gridSize);
 					break;
 				case Noise.NoiseSource.GPU_RenderTextureTo2DFloatArray:
@@ -238,18 +239,18 @@ public class GPUPlanetData {
 			// Textured
 			//materials[0] = new Material(Shader.Find("Shader Forge/Terrain"));
 			materials[0] = new Material(Shader.Find("Shader Graphs/TestPlanetTextureShader"));
-			RenderTexture oceanTex = GPUNoiseGenerator.GenerateNoise(seed, ocean);
-			RenderTexture plainHillsTex = GPUNoiseGenerator.GenerateNoise(seed, plainHills);
-			RenderTexture largeMountainsTex = GPUNoiseGenerator.GenerateNoise(seed, largeMountains);
-			RenderTexture mediumDetailTex = GPUNoiseGenerator.GenerateNoise(seed, mediumDetail);
+			RenderTexture oceanTex = GPUNoiseGenerator.GenerateNoise(seed, ocean, radius);
+			RenderTexture plainHillsTex = GPUNoiseGenerator.GenerateNoise(seed, plainHills, radius);
+			RenderTexture largeMountainsTex = GPUNoiseGenerator.GenerateNoise(seed, largeMountains, radius);
+			RenderTexture mediumDetailTex = GPUNoiseGenerator.GenerateNoise(seed, mediumDetail, radius);
 
 			materials[0].SetTexture(OCEAN_NOISE_TEXTURE_NAME, oceanTex);
 			materials[0].SetTexture(PLAIN_HILLS_NOISE_TEXTURE_NAME, plainHillsTex);
 			materials[0].SetTexture(LARGE_MOUNTAINS_NOISE_TEXTURE_NAME, largeMountainsTex);
 			materials[0].SetTexture(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, mediumDetailTex);
 
-			Vector2 textureScale = new Vector2(1f / gridSize, 1f / gridSize);
-			materials[0].SetVector("_TextureScale", textureScale);
+			Vector2 tiling = new Vector2(1f / gridSize, 1f / gridSize);
+			materials[0].SetVector("_Tiling", tiling);
 
 			materials[0].SetFloat("_Brightness1", 6.36f);
 			materials[0].SetFloat("_Brightness2", 1.66f);
@@ -274,7 +275,10 @@ public class GPUPlanetData {
 
 		}
 
-		return GeneratePlanetChunkObj(name, side, position, planetSize, rotation, chunkMesh, materials, heightMaps, gridSize, hasHeight, hasCollider);
+		return Tuple.Create(
+			GeneratePlanetChunkObj(name, side, position, planetSize, rotation, chunkMesh, materials, ref heightMaps, gridSize, hasHeight, hasCollider),
+			renderTextureList
+		);
 	}
 
 
@@ -287,7 +291,7 @@ public class GPUPlanetData {
 
 
 	// Generate planet chunk object
-	GameObject GeneratePlanetChunkObj(string name, string side, Vector3 position, float planetSize, Vector2 rotation, Mesh mesh, Material[] materials, float[][,] heightMaps, int gridSize, bool hasHeight, bool hasCollider) {
+	GameObject GeneratePlanetChunkObj(string name, string side, Vector3 position, float planetSize, Vector2 rotation, Mesh mesh, Material[] materials, ref float[][,] heightMaps, int gridSize, bool hasHeight, bool hasCollider) {
 
 		GameObject planetChunk = new GameObject(name);
 		planetChunk.AddComponent<MeshFilter>().mesh = mesh;
@@ -381,15 +385,14 @@ public class GPUPlanetData {
 			float heightmapPoint;
 
 			for (int i = 0; i < heightMaps.Length; ++i) {
-				float[,] heightMap = heightMaps[i];
-				int hmapLength = heightMap.GetLength(0);
+				int hmapLength = heightMaps[i].GetLength(0);
 				float hmPosMultiplier = (float)(hmapLength - 1) / ((float)(verticesWidth - 1));
 				//Debug.Log(" ---------- " + name + " ---------- ");
 
 
 				for (int x = 0; x < verticesWidth; ++x) {
 					for (int y = 0; y < verticesWidth; ++y) {
-						heightmapPoint = heightMap[Mathf.RoundToInt(x * hmPosMultiplier), Mathf.RoundToInt(y * hmPosMultiplier)];
+						heightmapPoint = heightMaps[i][Mathf.RoundToInt(x * hmPosMultiplier), Mathf.RoundToInt(y * hmPosMultiplier)];
 
 						//if (y == 0 || x == 0 || y == verticesWidth - 1 || x == verticesWidth - 1) {
 						//	if (Math.Abs(heightmapPoint) > 2) Debug.Log(heightmapPoint);
@@ -452,8 +455,11 @@ public class GPUPlanetData {
 
 			//vertexBuffer.GetData(newVertices);
 			//heightMapBuffer.GetData(heightMap);
+
 			mf.mesh.vertices = newVertices;
 			/*mf.mesh.vertices = vertices;*/
+
+			//mf.mesh.normals = CalculateNormals(ref newVertices, mf.mesh.triangles, mf.mesh.uv); // TODO: How the normals should be calculated
 			mf.mesh.RecalculateNormals(); // Important! Jos ei käytä niin kaikki shadows menee esim ihan pilalle
 			mf.mesh.RecalculateBounds(); // Important!
 
@@ -507,6 +513,38 @@ public class GPUPlanetData {
 	}
 
 
+	/*
+	TODO: How the normals should be calculated
+
+	Vector3[] CalculateNormals(ref Vector3[] vertices, int[] triangles, Vector2[] uvs) {
+		Vector3[] vertexNormals = new Vector3[vertices.Length];
+		int triangleCount = triangles.Length / 3;
+		for (int i = 0; i < triangleCount; ++i) {
+			int normalTriangleIndex = i * 3;
+			int vertexIndexA = triangles[normalTriangleIndex];
+			int vertexIndexB = triangles[normalTriangleIndex + 1];
+			int vertexIndexC = triangles[normalTriangleIndex + 2];
+
+			Vector3 triangleNormal = SurfaceNormalFromIndices(ref vertices, vertexIndexA, vertexIndexB, vertexIndexC);
+			vertexNormals[vertexIndexA] += triangleNormal;
+			vertexNormals[vertexIndexB] += triangleNormal;
+			vertexNormals[vertexIndexC] += triangleNormal;
+		}
+		for (int i = 0; i < vertexNormals.Length; ++i) {
+			vertexNormals[i].Normalize();
+		}
+		return vertexNormals;
+	}
+
+	Vector3 SurfaceNormalFromIndices(ref Vector3[] vertices, int indexA, int indexB, int indexC) {
+		Vector3 pointA = vertices[indexA];
+		Vector3 pointB = vertices[indexB];
+		Vector3 pointC = vertices[indexC];
+
+		Vector3 sideAB = pointB - pointA;
+		Vector3 sideAC = pointC - pointA;
+		return Vector3.Cross(sideAB, sideAC).normalized;
+	}*/
 
 	#endregion
 

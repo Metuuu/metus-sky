@@ -12,6 +12,7 @@ public class NoiseTest : MonoBehaviour {
 	float[,] heightMap;
 	Vector3[] originalVertices;
 	float originalScale = 0;
+	float radius = 100;
 
 	[SerializeField] int noisePerformanceTestLoopTimes = 1;
 	[SerializeField] Noise.NoiseSource noiseSource;
@@ -22,12 +23,13 @@ public class NoiseTest : MonoBehaviour {
 	[SerializeField] float persistance = 0.5f;
 	[SerializeField] float lacunarity = 1.87f;
 	[SerializeField] float maxNoiseHeight = 1f;
-	[SerializeField] Vector2 offset = new Vector2(0, 0);
+	[SerializeField] Vector3 offset = new Vector3(0, 0, 0);
+	[SerializeField] float zoom = 1;
 
 	[SerializeField] float noiseScale = 10;
 	[SerializeField] GPUNoiseGenerator.NoiseResolution noiseResolution = GPUNoiseGenerator.NoiseResolution.LOW;
 	[SerializeField] int gridSize = 24;
-	[SerializeField] bool useRenderTextureForDrawingTexture = true;
+	[SerializeField] bool useRenderTextureForDrawingTexture = false;
 
 	[SerializeField] GPUNoiseGenerator.Side side = GPUNoiseGenerator.Side.Bottom;
 	[SerializeField] string quarter = "";
@@ -45,8 +47,10 @@ public class NoiseTest : MonoBehaviour {
 	float lastPersistance = 0;
 	float lastLacunarity = 0;
 	float lastMaxNoiseHeight = 0;
-	Vector2 lastOffset = new Vector2(0, 0);
+	Vector3 lastOffset = new Vector3(0, 0, 0);
 	float lastNoiseScale = 0;
+	float lastZoom = 1;
+	bool lastUseRenderTextureForDrawingTexture = false;
 	GPUNoiseGenerator.NoiseResolution lastNoiseResolution = GPUNoiseGenerator.NoiseResolution.VERY_LOW;
 	int lastGridSize = 0;
 	GPUNoiseGenerator.Side lastSide = GPUNoiseGenerator.Side.Bottom;
@@ -72,7 +76,7 @@ public class NoiseTest : MonoBehaviour {
 
 	// - Update -
 	void Update() {
-		if (Input.GetKeyDown(KeyCode.Space) || (autoUdpate && (noisePerformanceTestLoopTimes != lastNoisePerformanceTestLoopTimes || noiseSource != lastNoiseSource || seed != lastSeed || octaves != lastOctaves || frequency != lastFrequency || amplitude != lastAmplitude || persistance != lastPersistance || lacunarity != lastLacunarity || maxNoiseHeight != lastMaxNoiseHeight || offset != lastOffset || noiseScale != lastNoiseScale || noiseResolution != lastNoiseResolution || gridSize != lastGridSize || side != lastSide || quarter != lastQuarter || enableHeight != lastEnableHeight))) {
+		if (Input.GetKeyDown(KeyCode.Space) || (autoUdpate && (noisePerformanceTestLoopTimes != lastNoisePerformanceTestLoopTimes || noiseSource != lastNoiseSource || seed != lastSeed || octaves != lastOctaves || frequency != lastFrequency || amplitude != lastAmplitude || persistance != lastPersistance || lacunarity != lastLacunarity || maxNoiseHeight != lastMaxNoiseHeight || offset != lastOffset || noiseScale != lastNoiseScale || zoom != lastZoom || noiseResolution != lastNoiseResolution || gridSize != lastGridSize || lastUseRenderTextureForDrawingTexture != useRenderTextureForDrawingTexture || side != lastSide || quarter != lastQuarter || enableHeight != lastEnableHeight))) {
 
 			if (noiseSource != Noise.NoiseSource.GPU_RenderTexture) {
 				DrawNoiseToPlane();
@@ -102,11 +106,13 @@ public class NoiseTest : MonoBehaviour {
 			lastMaxNoiseHeight = maxNoiseHeight;
 			lastOffset = offset;
 			lastNoiseScale = noiseScale;
+			lastZoom = zoom;
 			lastNoiseResolution = noiseResolution;
 			lastGridSize = gridSize;
 			lastSide = side;
 			lastQuarter = quarter;
 			lastEnableHeight = enableHeight;
+			lastUseRenderTextureForDrawingTexture = useRenderTextureForDrawingTexture;
 		}
 	}
 
@@ -130,13 +136,13 @@ public class NoiseTest : MonoBehaviour {
 			resolution = noiseResolution
 		};
 
-		heightMap = Noise.GenerateNoiseMap(seed, offset, noiseData, noiseScale, noiseSource, gridSize, noisePerformanceTestLoopTimes);
+		heightMap = Noise.GenerateNoiseMap(seed, offset, noiseData, noiseScale, noiseSource, gridSize, zoom, noisePerformanceTestLoopTimes, radius);
 
 		if (!useRenderTextureForDrawingTexture) {
 			Texture2D noiseTexture = TextureGenerator.TextureFromHeightMap(heightMap);
 			planeRenderer.material.mainTexture = noiseTexture;
 		} else {
-			rt = GPUNoiseGenerator.GenerateNoise(seed, noiseData);
+			rt = GPUNoiseGenerator.GenerateNoise(seed, noiseData, radius);
 			planeRenderer.material.mainTexture = rt;
 		}
 	}
@@ -158,7 +164,7 @@ public class NoiseTest : MonoBehaviour {
 			};
 			if (rt != null)
 				rt.Release();
-			rt = GPUNoiseGenerator.GenerateNoise(seed, noiseData);
+			rt = GPUNoiseGenerator.GenerateNoise(seed, noiseData, radius);
 		}
 		st.Stop();
 		if (noisePerformanceTestLoopTimes != 1)
