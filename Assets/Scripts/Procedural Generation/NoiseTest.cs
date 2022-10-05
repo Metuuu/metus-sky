@@ -33,6 +33,12 @@ public class NoiseTest : MonoBehaviour {
 
 	[SerializeField] GPUNoiseGenerator.Side side = GPUNoiseGenerator.Side.Bottom;
 	[SerializeField] string quarter = "";
+	[SerializeField] GPUNoiseGenerator.LodLowerOn lodLowerOn = new GPUNoiseGenerator.LodLowerOn {
+		left = 0,
+		right = 0,
+		top = 0,
+		bottom = 0
+	};
 
 	[SerializeField] bool enableHeight = false;
 	[SerializeField] bool autoUdpate = true;
@@ -133,7 +139,8 @@ public class NoiseTest : MonoBehaviour {
 			lacunarity = lacunarity,
 			maxNoiseHeight = maxNoiseHeight,
 			amplitude = amplitude,
-			resolution = noiseResolution
+			resolution = noiseResolution,
+			lodLowerOn = lodLowerOn,
 		};
 
 		heightMap = Noise.GenerateNoiseMap(seed, offset, noiseData, noiseScale, noiseSource, gridSize, zoom, noisePerformanceTestLoopTimes, radius);
@@ -160,7 +167,8 @@ public class NoiseTest : MonoBehaviour {
 				maxNoiseHeight = maxNoiseHeight,
 				persistence = persistance,
 				amplitude = amplitude,
-				resolution = noiseResolution
+				resolution = noiseResolution,
+				lodLowerOn = lodLowerOn,
 			};
 			if (rt != null)
 				rt.Release();

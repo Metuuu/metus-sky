@@ -79,7 +79,7 @@ public class Movement : MonoBehaviour {
         rb = Character.RigidBody;
         transform = Character.Transform;
         PLDir = GetComponent<PlanetLocalDirections>();
-        
+
         CapsuleCollider capsule = GetComponent<CapsuleCollider>();
         halfPlayerHeight = capsule.height * 0.5f;
         bottomCapsuleSphereOrigin = halfPlayerHeight - capsule.radius;
@@ -90,6 +90,17 @@ public class Movement : MonoBehaviour {
 
     // --- Update ---
     void Update() {
+
+
+	}
+
+
+
+	// --- Fixed Update ---
+	void FixedUpdate() {
+
+        vel = rb.velocity;
+        localVel = transform.InverseTransformDirection(rb.velocity);
 
         // Jump input
         if ((grounded || (touchesObstacle && Character.InSpace)) && Input.GetButtonDown("Jump")) {
@@ -108,21 +119,12 @@ public class Movement : MonoBehaviour {
 		if (Input.GetKey(KeyCode.K)) {
 			if (isRunning)
 				transform.position += Camera.main.transform.forward * 500 * Time.deltaTime;
-			else 
+			else
 				transform.position += Camera.main.transform.forward * 100 * Time.deltaTime;
 		}
 
 		#endregion
 
-	}
-
-
-
-	// --- Fixed Update ---
-	void FixedUpdate() {
-
-        vel = rb.velocity;
-        localVel = transform.InverseTransformDirection(rb.velocity);
 
         #region [ - Fast collision check - ]
 
@@ -151,14 +153,14 @@ public class Movement : MonoBehaviour {
 
         #endregion
 
-        
+
 
         #region [ - Grounded check - ]
 
         RaycastHit hit;
         grounded = false;
         for (int i = 0, len = 6; i < len; ++i) {
-            
+
             // Raycast for checking if grounded
             Ray ray;
             switch (i) {
@@ -198,7 +200,7 @@ public class Movement : MonoBehaviour {
                     }
                     break;
             }
-            
+
             //Debug.Log(hit.collider);
         }
         Character.GravityBodyScript.grounded = grounded;
@@ -211,10 +213,10 @@ public class Movement : MonoBehaviour {
         inputX = Input.GetAxisRaw("Horizontal");
         inputY = Input.GetAxisRaw("Vertical");
         input = Vector2.Lerp(input, new Vector2(inputX, inputY), movementAcceleration);
-        
+
         if (Input.GetKey(KeyCode.LeftShift)) { isRunning = true; } // running
         else { isRunning = false; } // walking
-        
+
         // Movement speed
         if (!isRunning) { // walking
             speed = walkSpeed;
@@ -223,8 +225,8 @@ public class Movement : MonoBehaviour {
             speed = runSpeed;
         }
 
-        
-        
+
+
         #endregion
 
 
@@ -282,7 +284,7 @@ public class Movement : MonoBehaviour {
 
                             Vector3 velocity = transform.InverseTransformDirection(PLDir.forwardVel + PLDir.rightVel);
                             Vector3 velocityChange = (targetVelocity - velocity);
-                            
+
                             //velocityChange.x = Mathf.Clamp(velocityChange.x, -speed, speed);
                             //velocityChange.z = Mathf.Clamp(velocityChange.z, -speed, speed);
 
@@ -294,8 +296,8 @@ public class Movement : MonoBehaviour {
 
 
                 }
-                 
-                
+
+
             }
 
         }

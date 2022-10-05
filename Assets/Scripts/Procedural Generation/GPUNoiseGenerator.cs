@@ -4,7 +4,7 @@ using UnityEngine;
 
 public static class GPUNoiseGenerator {
 
-    public enum NoiseType { PERLIN }
+	public enum NoiseType { PERLIN }
 	public enum NoiseResolution { TRASH = 32, VERY_VERY_LOW = 64, VERY_LOW = 128, LOW = 256, MEDIUM = 512, HIGH = 1024, VERY_HIGH = 2048, ULTRA = 4096 }
 	//public enum NoiseResolution { TRASH = 24, VERY_VERY_LOW = 48, VERY_LOW = 96, LOW = 120, MEDIUM = 240, HIGH = 1080, VERY_HIGH = 2160, ULTRA = 4320 }
 	public enum Side { Bottom, Left, Front, Right, Top, Back }
@@ -18,19 +18,28 @@ public static class GPUNoiseGenerator {
 
     [System.Serializable]
     public class NoiseData {
-        public NoiseType noiseType;
-        public NoiseResolution resolution;
-        public Side side;
+		public NoiseType noiseType;
+		public NoiseResolution resolution;
+		public Side side;
+		public LodLowerOn lodLowerOn;
 		public string quarter;
 		public int octaves;
-        public float frequency;
-        public float amplitude;
-        public float lacunarity;
+		public float frequency;
+		public float amplitude;
+		public float lacunarity;
 		public float persistence;
 		public float maxNoiseHeight = 1f;
 		/*NoiseData(NoiseType noiseType) {
 			this.noiseType = noiseType
 		}*/
+	}
+
+	[System.Serializable]
+    public class LodLowerOn {
+		public int left = 0;
+		public int right = 0;
+		public int top = 0;
+		public int bottom = 0;
 	}
 
 
@@ -223,6 +232,10 @@ public static class GPUNoiseGenerator {
 		shader.SetVector("ChunkOffset", offset);
 		shader.SetFloat("MaxNoiseHeight", noiseData.maxNoiseHeight);
 		shader.SetFloat("radius", planetRadius);
+		shader.SetInt("lodLowerOnLeft", noiseData.lodLowerOn.left);
+		shader.SetInt("lodLowerOnTop", noiseData.lodLowerOn.top);
+		shader.SetInt("lodLowerOnRight", noiseData.lodLowerOn.right);
+		shader.SetInt("lodLowerOnBottom", noiseData.lodLowerOn.bottom);
 		shader.SetTexture(kernelIndex, "tex", texture);
 		shader.Dispatch(kernelIndex, (int)noiseData.resolution / 32, (int)noiseData.resolution / 32, 1);
 		return texture;
@@ -486,24 +499,19 @@ public static class GPUNoiseGenerator {
 		Vector3 chunkOffset = Vector3.zero;
 
 
-		// Join Table - [bottom, left, right, top] 1 = true, 0 = false
-		int[,] borderJoin = { 
+		// Join Table - [(0)bottom, (1)left, (2)right, (3)top] 1 = true, 0 = false
+		int[,] borderJoin = {
+			// 0, 1, 2, 3 - quarters
 			{ 0, 0, 0, 0 },	// 0 - bottom
-			{ 1, 0,	1, 0 },	// 1 - left
-			{ 1, 0,	0, 0 },	// 2 - front
-			{ 1, 1,	0, 0 },	// 3 - right
-			{ 1, 1,	1, 1 },	// 4 - top
-			{ 1, 1,	1, 0 }	// 5 - back
+			{ 1, 0, 1, 0 },	// 1 - left
+			{ 1, 0, 0, 0 },	// 2 - front
+			{ 1, 1, 0, 0 },	// 3 - right
+			{ 1, 1, 1, 1 },	// 4 - top
+			{ 1, 1, 1, 0 }		// 5 - back
 		};
 
-		int joinBottom = 0, 
-			joinBottomB = 0,
-			joinLeft = 0,
-			joinLeftB = 0,
-			joinRight = 0,
-			joinRightB = 0,
-			joinTop = 0,
-			joinTopB = 0;
+		int joinBottomQuarter = 0,
+			joinRightQuarter = 0;
 
 
 		// Sides
@@ -547,42 +555,48 @@ public static class GPUNoiseGenerator {
 			for (int i = 0; i < quarterLen; ++i) {
 				char quarter = noiseType.quarter[i];
 				if (bottommost && quarter != '0' && quarter != '1') {
-					joinBottom = borderJoin[sideIndex, 0];
+					// joinBottom = borderJoin[sideIndex, 0];
 					bottommost = false;
 				}
 				if (leftmost && quarter != '0' && quarter != '2') {
-					joinLeft = borderJoin[sideIndex, 1];
+					// joinLeft = borderJoin[sideIndex, 1];
 					leftmost = false;
 				}
 				if (rightmost && quarter != '1' && quarter != '3') {
-					joinRight = borderJoin[sideIndex, 2];
+					// joinRight = borderJoin[sideIndex, 2];
 					rightmost = false;
 				}
 				if (topmost && quarter != '2' && quarter != '3') {
-					joinTop = borderJoin[sideIndex, 3];
+					// joinTop = borderJoin[sideIndex, 3];
 					topmost = false;
 				}
 			}
 
 			if (quarterLen > 1) {
-				joinBottom = bottommost ? 0 : 1;
-				joinRight = rightmost ? 0 : 1;
+				joinBottomQuarter = bottommost ? 0 : 1;
+				joinRightQuarter = rightmost ? 0 : 1;
 			} else {
 				if (lastQuarter == '2' || lastQuarter == '3')
-					joinBottom = 1;
+					joinBottomQuarter = 1;
 				if (lastQuarter == '0' || lastQuarter == '2')
-					joinRight = 1;
+					joinRightQuarter = 1;
 			}
 		}
-		if (bottommost)
-			joinBottomB = borderJoin[sideIndex, 0];
-		if (leftmost)
-			joinLeftB = borderJoin[sideIndex, 1];
-		if (rightmost)
-			joinRightB = borderJoin[sideIndex, 2];
-		if (topmost)
-			joinTopB = borderJoin[sideIndex, 3];
-	
+
+		int joinBottomB = bottommost ? 1 : 0;
+		int joinLeftB = leftmost ? 1 : 0;
+		int joinRightB = rightmost ? 1 : 0;
+		int joinTopB = topmost ? 1 : 0;
+
+		// if (bottommost)
+		// 	joinBottomB = quarterBorderJoin[sideIndex, 0];
+		// if (leftmost)
+		// 	joinLeftB = quarterBorderJoin[sideIndex, 1];
+		// if (rightmost)
+		// 	joinRightB = quarterBorderJoin[sideIndex, 2];
+		// if (topmost)
+		// 	joinTopB = quarterBorderJoin[sideIndex, 3];
+
 
 
 		for (int i = 0; i < quarterLen; ++i) {
@@ -716,15 +730,23 @@ public static class GPUNoiseGenerator {
 		shader.SetVector("Offset", (Vector4)(offset != null ? offset : Vector3.zero));
 		shader.SetFloat("MaxNoiseHeight", noiseType.maxNoiseHeight);
 
-		shader.SetInt("joinBottom", joinBottom);
+		// shader.SetInt("joinBottom", joinBottom);
 		shader.SetInt("joinBottomB", joinBottomB);
-		shader.SetInt("joinLeft", joinLeft);
+		// shader.SetInt("joinLeft", joinLeft);
 		shader.SetInt("joinLeftB", joinLeftB);
-		shader.SetInt("joinRight", joinRight);
+		// shader.SetInt("joinRight", joinRight);
 		shader.SetInt("joinRightB", joinRightB);
-		shader.SetInt("joinTop", joinTop);
+		// shader.SetInt("joinTop", joinTop);
 		shader.SetInt("joinTopB", joinTopB);
-		
+
+		shader.SetInt("joinRightQuarter", joinRightQuarter);
+		shader.SetInt("joinBottomQuarter", joinBottomQuarter);
+
+		shader.SetInt("lodLowerOnLeft", noiseType.lodLowerOn.left);
+		shader.SetInt("lodLowerOnTop", noiseType.lodLowerOn.top);
+		shader.SetInt("lodLowerOnRight", noiseType.lodLowerOn.right);
+		shader.SetInt("lodLowerOnBottom", noiseType.lodLowerOn.bottom);
+
 		shader.SetFloat("radius", planetRadius);
 
 
@@ -757,7 +779,7 @@ public static class GPUNoiseGenerator {
 
 
 		// HEIGHT MAP FOR MESH ONLY
-	
+
 		int size = resolution * resolution;
 		float[] heightMapArray = new float[size];
 		ComputeBuffer buffer = new ComputeBuffer(size, sizeof(float), ComputeBufferType.Default);

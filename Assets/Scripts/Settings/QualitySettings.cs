@@ -22,8 +22,8 @@ public static class QualitySettings {
         InitLODs();
         ChangeLOD(QualityLevel.Medium);
     }
-    
-        
+
+
 
 
     // -- BLUEPRINTS --
@@ -56,7 +56,7 @@ public static class QualitySettings {
 
 
     }
-    
+
 
 
     // -- FUNCTIONS --
@@ -103,7 +103,8 @@ public static class QualitySettings {
 		// TÄÄ ON HYVÄ TÄLLÄHETKELLÄ !!!!
 		int[] lod = { 0, 1, 2, 3, 4, 5, 6 };
 		float[] distance = { 5, 2, 0.5f, 0.2f, 0.1f, 0.05f, 0 }; // Viimeinen pitää olla 0. vertaa siis aina edelliseen
-		int[] gridSize = { 4, 4, 4, 4, 4, 4, 4, 4 };
+		// int[] gridSize = { 4, 4, 4, 4, 4, 4, 4, 4 };
+		int[] gridSize = { 32, 32, 32, 32, 32, 32, 32, 32 };
 		//int[] gridSize = { 8, 8, 8, 64, 32, 32, 96, 156 };
 		//int[] gridSize = { 24, 24, 24, 48, 48, 48, 96 };
 		int[] tesselation = { 1, 1, 1, 1, 1, 1, 1 };
@@ -151,7 +152,7 @@ public static class QualitySettings {
 
 	// Get LOD side count
 	public static int GetLODSideCount(LODSide lodSide) {
-        
+
         int currentQuarter = 0;
         int count = 0;
 
@@ -180,5 +181,5 @@ public static class QualitySettings {
     }
 
 
-    
+
 }

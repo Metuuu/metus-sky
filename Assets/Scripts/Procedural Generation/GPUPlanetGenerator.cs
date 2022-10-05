@@ -182,7 +182,7 @@ public class GPUPlanetData {
 					rotation = new Vector2(180, 0);
 					break;
 			}
-			
+
 
 			// TODO: en tiiä pitäiskö vaan parametrina laittaa planet side ja side noise generaattoriin ettei tarttee jokaiselle laittaa niitä erikseen
 			ocean.side = planetSide;
@@ -208,10 +208,10 @@ public class GPUPlanetData {
 
 			switch (noiseSource) {
 				case Noise.NoiseSource.GPU_2DFloatArray:
-					oceanHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, ocean, gridSize);
+					oceanHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, ocean, radius, gridSize);
 					plainHillsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, plainHills, radius, gridSize);
 					largeMountainsHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, largeMountains, radius, gridSize);
-					mediumDetailHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, mediumDetail, gridSize);
+					mediumDetailHeightMap = GPUNoiseGenerator.GenerateNoiseArray(seed, mediumDetail, radius, gridSize);
 					break;
 				case Noise.NoiseSource.GPU_RenderTextureTo2DFloatArray:
 					oceanHeightMap = GPUNoiseGenerator.GenerateNoiseArrayFromRenderTexture(seed, ocean);
@@ -229,22 +229,22 @@ public class GPUPlanetData {
 			materials = new Material[1];
 
 			// Height Map material
-			/*materials[0] = new Material(Shader.Find("Unlit/Texture"));
-			Texture2D noiseTexture = TextureGenerator.TextureFromHeightMap(mediumDetailHeightMap);
+			materials[0] = new Material(Shader.Find("Unlit/Texture"));
+			Texture2D noiseTexture = TextureGenerator.TextureFromHeightMap(plainHillsHeightMap);
 			Vector2 textureScale = new Vector2(1f / gridSize, 1f / gridSize);
 			materials[0].mainTextureScale = textureScale;
-			materials[0].mainTexture = noiseTexture;*/
+			materials[0].mainTexture = noiseTexture;
 
 
 			// Textured
 			//materials[0] = new Material(Shader.Find("Shader Forge/Terrain"));
-			materials[0] = new Material(Shader.Find("Shader Graphs/TestPlanetTextureShader"));
+			// materials[0] = new Material(Shader.Find("Shader Graphs/TestPlanetTextureShader"));
 			RenderTexture oceanTex = GPUNoiseGenerator.GenerateNoise(seed, ocean, radius);
 			RenderTexture plainHillsTex = GPUNoiseGenerator.GenerateNoise(seed, plainHills, radius);
 			RenderTexture largeMountainsTex = GPUNoiseGenerator.GenerateNoise(seed, largeMountains, radius);
 			RenderTexture mediumDetailTex = GPUNoiseGenerator.GenerateNoise(seed, mediumDetail, radius);
 
-			materials[0].SetTexture(OCEAN_NOISE_TEXTURE_NAME, oceanTex);
+			/* [0].SetTexture(OCEAN_NOISE_TEXTURE_NAME, oceanTex);
 			materials[0].SetTexture(PLAIN_HILLS_NOISE_TEXTURE_NAME, plainHillsTex);
 			materials[0].SetTexture(LARGE_MOUNTAINS_NOISE_TEXTURE_NAME, largeMountainsTex);
 			materials[0].SetTexture(MEDIUM_DETAIL_NOISE_TEXTURE_NAME, mediumDetailTex);
@@ -257,14 +257,14 @@ public class GPUPlanetData {
 			materials[0].SetFloat("_Brightness3", 0.4f);
 			materials[0].SetFloat("_Brightness4", 22.73f);
 
-			materials[0].SetTexture("_MainTex", oceanTex);
+			materials[0].SetTexture("_MainTex", oceanTex); */
 
 			renderTextureList = new List<RenderTexture> {
 				oceanTex,
-                plainHillsTex,
-                largeMountainsTex,
-                mediumDetailTex
-            };
+				plainHillsTex,
+				largeMountainsTex,
+				mediumDetailTex
+			};
 
 			//
 			//mat.SetTexture("_MedTex", );
@@ -550,4 +550,3 @@ public class GPUPlanetData {
 
 
 }
- 

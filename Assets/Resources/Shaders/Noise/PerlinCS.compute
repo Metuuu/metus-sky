@@ -102,6 +102,13 @@ int joinRightB;
 int joinTop;
 int joinTopB;
 
+int lodLowerOnLeft;
+int lodLowerOnRight;
+int lodLowerOnTop;
+int lodLowerOnBottom;
+
+int joinRightQuarter;
+int joinBottomQuarter;
 
 //int joinArr[] = {
 //	joinBottom,
@@ -238,7 +245,7 @@ float PerlinNormalSphericalCube(float3 p, int octaves, float3 offset, float freq
 // Cube to sphere position transform
 float3 CubeToSphere(float3 pos, float3 offset)
 {
-	float3 v = (pos + ChunkOffset) * 2 / (resolution * zoom)
+	float3 v = ((pos + ChunkOffset) * 2) / (resolution * zoom)
 		+ (offset) * 2 / (resolution)
 		- float3(1, 1, 1);
 	//float3 v = (pos + (zoom - 1)*resolution + ChunkOffset) * 2 / (resolution) - float3(1, 1, 1);
@@ -253,11 +260,17 @@ float3 Join(int enabled, float3 joinPos, uint XorY, float3 extraOffset = float3(
 }
 
 
-// ---- POSITIOS ----
+// ---- POSITIONS ----
 
 // Bottom
 float3 BottomPos(float x, float y) {
 	return float3(x, 0, y);
+}
+float3 BottomJBottomQ() {
+	return float3(0, 0, 1);
+}
+float3 BottomJRightQ() {
+	return float3(-1, 0, 0);
 }
 float3 BottomJBottom() {
 	return float3(0, 0, 1);
@@ -265,34 +278,43 @@ float3 BottomJBottom() {
 float3 BottomJRight() {
 	return float3(-1, 0, 0);
 }
+float3 BottomJTopB() {
+	return float3(0, -1, 0);
+}
 
 // Left
 float3 LeftPos(float x, float y) {
 	return float3(0, y, x);
 }
-float3 LeftJRightB() {
-	return float3(0, 0, 0);
+float3 LeftJRightQ() {
+	return float3(0, 0, -1);
+}
+float3 LeftJBottomQ() {
+	return float3(0, 1, 0);
 }
 float3 LeftJRight() {
 	return float3(0, 0, -1);
 }
+float3 LeftJRightB() {
+	return float3(-1, 0, 0);
+}
 float3 LeftJBottom() {
 	return float3(-1, 1, 0);
 }
-float3 LeftJBottomB() {
-	return float3(0, 0, 0);
-	//return float3(-1, 1, 0);
-}
+//xxx
 
 // Front
 float3 FrontPos(float x, float y) {
 	return float3(x, y, 0);
 }
-float3 frontJBottom() {
+float3 FrontJBottomQ() {
 	return float3(0, 1, 0);
 }
-float3 frontJBottomB() {
-	return float3(0, 0, 0);
+float3 FrontJRightQ() {
+	return float3(-1, 0, 0);
+}
+float3 frontJBottom() {
+	return float3(0, 1, 0);
 }
 float3 frontJRight() {
 	return float3(-1, 0, 0);
@@ -302,9 +324,11 @@ float3 frontJRight() {
 float3 RightPos(float x, float y) {
 	return float3(0, y, x);
 }
-float3 RightJLeftB() {
-	return float3(0, 0, 0);
-	//return float3(0, 0, -1);
+float3 RightJRightQ() {
+	return float3(0, 0, 1);
+}
+float3 RightJBottomQ() {
+	return float3(0, 1, 0);
 }
 float3 RightJRight() {
 	return float3(0, 0, 1);
@@ -313,9 +337,8 @@ float3 RightJBottom() {
 	//return float3(0, 0, 0);
 	return float3(0, 1, -1);
 }
-float3 RightJBottomB() {
+float3 RightJLeft() {
 	return float3(0, 0, 0);
-	//return float3(0, 1, -1);
 }
 
 
@@ -323,47 +346,32 @@ float3 RightJBottomB() {
 float3 TopPos(float x, float y) {
 	return float3(x, 0, y);
 }
-float3 TopJTopB() {
-	return float3(0, 0, 0);
-	//return float3(0, -1, 0);
+float3 TopJRightQ() {
+	return float3(-1, 0, 0);
 }
-float3 TopJLeftB() {
-	return float3(0, 0, 0);
+float3 TopJBottomQ() {
+	return float3(0, 0, -1);
 }
 float3 TopJRight() {
 	return float3(-1, 0, 0);
-	//return float3(-1, 0, 0);
-}
-float3 TopJRightB() {
-	return float3(0, 0, 0);
 }
 float3 TopJBottom() {
-	//return float3(0, 0, 0);
 	return float3(0, 0, -1);
-}
-float3 TopJBottomB() {
-	return float3(0, 0, 0);
 }
 
 // BACK
 float3 BackPos(float x, float y) {
 	return float3(x, y, 0);
 }
-float3 BackJTopB() {
-	return float3(0, 0, 0);
-	//return float3(0, -1, 0);
+float3 BackJRightQ() {
+	return float3(-1, 0, 0);
 }
-float3 BackJLeftB() {
-	return float3(0, 0, 0);
-	//return float3(0, 0, -1);
+float3 BackJBottomQ() {
+	return float3(0, -1, 0);
 }
 float3 BackJRight() {
 	return float3(-1, 0, 0);
 	//return float3(-1, 0, 0);
-}
-float3 BackJRightB() {
-	return float3(0, 0, 0);
-	//return float3(1, 0, -1);
 }
 float3 BackJBottom() {
 	//return float3(0, 0, 0);
@@ -376,9 +384,11 @@ float3 BackJBottom() {
 float3 getSphereBottomPosition(uint2 id) {
 	int x = id.x;
 	int y = id.y;
-	float3 R = Join(joinRight, BottomJRight(), x);
-	float3 B = Join(joinBottom, BottomJBottom(), y);
-	return CubeToSphere(BottomPos(x, y) + R + B, float3(0, resolution - 1, 0));
+	float3 RQ = Join(joinRightQuarter, BottomJRightQ(), x);
+	float3 BQ = Join(joinBottomQuarter, BottomJBottomQ(), y);
+	// float3 BB = Join(joinTopB, BottomJTopB(), y);
+	float3 UJ = float3(0, -1, 0);
+	return CubeToSphere(BottomPos(x, y) + RQ + BQ + UJ, float3(0, resolution, 0));
 }
 float3 getCubeBottomPosition(uint2 id) {
 	int x = id.x;
@@ -391,100 +401,126 @@ float3 getCubeBottomPosition(uint2 id) {
 float3 getSphereLeftPosition(uint2 id) {
 	int x = id.x;
 	int y = id.y;
-	float3 R = Join(joinRight, LeftJRight(), x);
-	float3 RB = Join(joinRightB, LeftJRightB(), x);
-	float3 B = Join(joinBottom, LeftJBottom(), y);
-	float3 BB = Join(joinBottomB, LeftJBottomB(), y);
-	return CubeToSphere(LeftPos(x, y) + R + RB + B + BB, float3(resolution - 1, 0, 0));
+	float3 RQ = Join(joinRightQuarter, LeftJRightQ(), x);
+	float3 BQ = Join(joinBottomQuarter, LeftJBottomQ(), y);
+	// float3 RB = Join(joinRightB, LeftJRightB(), x);
+	float3 RB = float3(-1, 0, 0);
+	// float3 R = Join(joinRight, LeftJRight(), x);
+	// float3 RB = Join(joinRightB, LeftJRight(), x);
+	// float3 B = Join(joinBottom, LeftJBottom(), y);
+	// float3 BB = Join(joinBottomB, LeftJBottom(), y);
+	return CubeToSphere(LeftPos(x, y) + RQ + BQ + RB, float3(resolution, 0, 0));
 }
 float3 getCubeLeftPosition(uint2 id) {
 	int x = id.x;
 	int y = id.y;
 	float3 R = Join(joinRight, LeftJRight(), x);
-	float3 RB = Join(joinRightB, LeftJRightB(), x);
+	float3 RB = Join(joinRightB, LeftJRight(), x);
 	float3 B = Join(joinBottom, LeftJBottom(), y);
-	float3 BB = Join(joinBottomB, LeftJBottomB(), y);
+	float3 BB = Join(joinBottomB, LeftJBottom(), y);
 	return LeftPos(x, y) + ChunkOffset + R + RB + B + BB;
 }
 // FRONT
 float3 getSphereFrontPosition(uint2 id) {
 	int x = id.x;
 	int y = id.y;
-	float3 rj = Join(joinRight, frontJRight(), x);
-	float3 bj = Join(joinBottom, frontJBottom(), y);
-	float3 bjB = Join(joinBottomB, frontJBottomB(), y);
-	return CubeToSphere(FrontPos(x, y) + rj + bj + bjB, float3(0, 0, 0));
+	float3 RQ = Join(joinRightQuarter, FrontJRightQ(), x);
+	float3 BQ = Join(joinBottomQuarter, FrontJBottomQ(), y);
+	// float3 rj = Join(joinRight, frontJRight(), x);
+	// float3 bj = Join(joinBottom, frontJBottom(), y);
+	// float3 bjB = Join(joinBottomB, frontJBottom(), y);
+	// return CubeToSphere(FrontPos(x, y), float3(0, 0, 0));
+	return CubeToSphere(FrontPos(x, y) + RQ + BQ, float3(0, 0, 0));
 }
 float3 getCubeFrontPosition(uint2 id) {
 	int x = id.x;
 	int y = id.y;
 	float3 rj = Join(joinRight, frontJRight(), x);
 	float3 bj = Join(joinBottom, frontJBottom(), y);
-	float3 bjB = Join(joinBottomB, frontJBottomB(), y);
+	float3 bjB = Join(joinBottomB, frontJBottom(), y);
 	return FrontPos(x, y) + ChunkOffset + rj + bj + bjB;
 }
 // RIGHT
 float3 getSphereRightPosition(uint2 id) {
-	int x = resolution - id.x - 1;
+	int x = resolution - id.x;
 	int y = id.y;
-	float3 R = Join(joinRight, RightJRight(), x);
-	float3 LB = Join(joinLeftB, RightJLeftB(), x);
-	float3 B = Join(joinBottom, RightJBottom(), y);
-	float3 BB = Join(joinBottomB, RightJBottomB(), y);
-	return CubeToSphere(RightPos(x, y) + R + LB + B + BB, float3(0, 0, 0));
+	float3 RQ = Join(joinRightQuarter, RightJRightQ(), x);
+	float3 BQ = Join(joinBottomQuarter, RightJBottomQ(), y);
+	float3 LB = float3(0, 0, -1);
+	// float3 R = Join(joinRight, RightJRight(), x);
+	// float3 LB = Join(joinLeftB, RightJLeft(), x);
+	// float3 B = Join(joinBottom, RightJBottom(), y);
+	// float3 BB = Join(joinBottomB, RightJBottom(), y);
+	return CubeToSphere(RightPos(x, y) + RQ + BQ + LB, float3(0, 0, 0));
 }
 float3 getCubeRightPosition(uint2 id) {
 	int x = resolution - id.x - 1;
 	int y = id.y;
 	float3 R = Join(joinRight, RightJRight(), x);
-	float3 LB = Join(joinLeftB, RightJLeftB(), x);
+	float3 LB = Join(joinLeftB, RightJLeft(), x);
 	float3 B = Join(joinBottom, RightJBottom(), y);
-	float3 BB = Join(joinBottomB, RightJBottomB(), y);
+	float3 BB = Join(joinBottomB, RightJBottom(), y);
 	return RightPos(x, y) + ChunkOffset + R + LB + B + BB;
 }
 // TOP
+// float3 Join(int enabled, float3 joinPos, uint XorY, float3 extraOffset = float3(0, 0, 0)) {
+// 	return enabled * floor(((joinPos - 1) * -0.5 * (resolution - 1) + XorY * joinPos) / (resolution - 1)) * joinPos + extraOffset;
+// }
 float3 getSphereTopPosition(uint2 id) {
+	// int x = (id.x - (id.x % 2));
 	int x = id.x;
-	int y = resolution - id.y - 1;
-	float3 TB = Join(joinTopB, TopJTopB(), y);
-	float3 R = Join(joinRight, TopJRight(), x);
-	float3 RB = Join(joinRightB, TopJRightB(), x);
-	float3 LB = Join(joinLeftB, TopJLeftB(), x);
-	float3 B = Join(joinBottom, TopJBottom(), y);
-	float3 BB = Join(joinBottomB, TopJBottomB(), y);
-	return CubeToSphere(TopPos(x, y) + TB + R + RB + LB + B + BB, float3(0, 0, 0));
+	int y = resolution - id.y;
+
+
+	float3 RQ = Join(joinRightQuarter, TopJRightQ(), x);
+	float3 BQ = Join(joinBottomQuarter, TopJBottomQ(), y);
+
+	if (lodLowerOnBottom == 1) {
+		if (y <= 1) {
+			y = 1;
+			x = (id.x - (id.x % 2));
+		}
+	}
+
+	// if (x > resolution - 2) {
+	// 	y = resolution - (id.y - id.y % 2) - 1;
+	// 	// x = (x - (x % 2));
+	// }
+
+	// int y = resolution - (id.y - id.y % 2) - 1;
+
+	float3 BB = float3(0, 0, -1);
+	return CubeToSphere(TopPos(x, y) + RQ + BQ + BB, float3(0, 0, 0));
 }
 float3 getCubeTopPosition(uint2 id) {
 	int x = id.x;
 	int y = resolution - id.y - 1;
-	float3 TB = Join(joinTopB, TopJTopB(), y);
-	float3 R = Join(joinRight, TopJRight(), x);
-	float3 RB = Join(joinRightB, TopJRightB(), x);
-	float3 LB = Join(joinLeftB, TopJLeftB(), x);
-	float3 B = Join(joinBottom, TopJBottom(), y);
-	float3 BB = Join(joinBottomB, TopJBottomB(), y);
-	return TopPos(x, y) + ChunkOffset + TB + R + RB + LB + B + BB;
+	// float3 TB = Join(joinTopB, TopJTop(), y);
+	// float3 R = Join(joinRight, TopJRight(), x);
+	// float3 RB = Join(joinRightB, TopJRight(), x);
+	// float3 LB = Join(joinLeftB, TopJLeft(), x);
+	// float3 B = Join(joinBottom, TopJBottom(), y);
+	// float3 BB = Join(joinBottomB, TopJBottom(), y);
+	return TopPos(x, y) + ChunkOffset;// + TB + R + RB + LB + B + BB;
 }
 // BACK
 float3 getSphereBackPosition(uint2 id) {
 	int x = id.x;
-	int y = resolution - id.y - 1;
-	float3 TB = Join(joinTopB, BackJTopB(), y);
-	float3 R = Join(joinRight, BackJRight(), x);
-	float3 RB = Join(joinRightB, BackJRightB(), x);
-	float3 LB = Join(joinLeftB, BackJLeftB(), x);
-	float3 B = Join(joinBottom, BackJBottom(), y);
-	return CubeToSphere(BackPos(x, y) + TB + R + RB + LB + B, float3(0, 0, resolution - 1));
+	int y = resolution - id.y;
+	float3 RQ = Join(joinRightQuarter, BackJRightQ(), x);
+	float3 BQ = Join(joinBottomQuarter, BackJBottomQ(), y);
+	float3 BB = float3(0, -1, -1);
+	return CubeToSphere(BackPos(x, y) + RQ + BQ + BB, float3(0, 0, resolution));// + TB + R + RB + LB + B, float3(0, 0, resolution - 1));
 }
 float3 getCubeBackPosition(uint2 id) {
 	int x = id.x;
 	int y = resolution - id.y - 1;
-	float3 TB = Join(joinTopB, BackJTopB(), y);
-	float3 R = Join(joinRight, BackJRight(), x);
-	float3 RB = Join(joinRightB, BackJRightB(), x);
-	float3 LB = Join(joinLeftB, BackJLeftB(), x);
-	float3 B = Join(joinBottom, BackJBottom(), y);
-	return BackPos(x, y) + ChunkOffset + TB + R + RB + LB + B;
+	// float3 TB = Join(joinTopB, BackJTop(), y);
+	// float3 R = Join(joinRight, BackJRight(), x);
+	// float3 RB = Join(joinRightB, BackJRight(), x);
+	// float3 LB = Join(joinLeftB, BackJLeft(), x);
+	// float3 B = Join(joinBottom, BackJBottom(), y);
+	return BackPos(x, y) + ChunkOffset;// + TB + R + RB + LB + B;
 }
 
 
@@ -602,8 +638,8 @@ void PerlinNoiseCubeBottom(uint2 id : SV_DispatchThreadID)
 [numthreads(32, 32, 1)]
 void PerlinNoiseCubeLeft(uint2 id : SV_DispatchThreadID)
 {
-    uint structs;
-    uint stride;
+	uint structs;
+	uint stride;
 
 	float3 position = getCubeLeftPosition(id);
 
@@ -616,8 +652,8 @@ void PerlinNoiseCubeLeft(uint2 id : SV_DispatchThreadID)
 [numthreads(32, 32, 1)]
 void PerlinNoiseCubeFront(uint2 id : SV_DispatchThreadID)
 {
-    uint structs;
-    uint stride;
+	uint structs;
+	uint stride;
 
 	//float3 X = FrontX(id);
 	//float3 Y = FrontY(id);
@@ -652,8 +688,8 @@ void PerlinNoiseCubeFront(uint2 id : SV_DispatchThreadID)
 [numthreads(32, 32, 1)]
 void PerlinNoiseCubeRight(uint2 id : SV_DispatchThreadID)
 {
-    uint structs;
-    uint stride;
+	uint structs;
+	uint stride;
 
 	float3 position = getCubeRightPosition(id);
 
@@ -666,8 +702,8 @@ void PerlinNoiseCubeRight(uint2 id : SV_DispatchThreadID)
 [numthreads(32, 32, 1)]
 void PerlinNoiseCubeTop(uint2 id : SV_DispatchThreadID)
 {
-    uint structs;
-    uint stride;
+	uint structs;
+	uint stride;
 
 	float3 position = getCubeTopPosition(id);
 
@@ -680,8 +716,8 @@ void PerlinNoiseCubeTop(uint2 id : SV_DispatchThreadID)
 [numthreads(32, 32, 1)]
 void PerlinNoiseCubeBack(uint2 id : SV_DispatchThreadID)
 {
-    uint structs;
-    uint stride;
+	uint structs;
+	uint stride;
 
 	float3 position = getCubeBackPosition(id);
 

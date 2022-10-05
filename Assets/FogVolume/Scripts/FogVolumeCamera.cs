@@ -2,7 +2,6 @@
 using UnityEngine;
 using UnityEngine.Profiling;
 using FogVolumeUtilities;
-using UnityEngine.VR;
 
 [ExecuteInEditMode]
 
@@ -28,7 +27,7 @@ public class FogVolumeCamera : MonoBehaviour
     public int screenX
     {
         get
-        {          
+        {
             return SceneCamera.pixelWidth;
         }
     }
@@ -334,7 +333,7 @@ public class FogVolumeCamera : MonoBehaviour
         if (SceneCamera)
         {
 
-            ThisCamera.aspect = SceneCamera.aspect;         
+            ThisCamera.aspect = SceneCamera.aspect;
             ThisCamera.farClipPlane = SceneCamera.farClipPlane;
             ThisCamera.nearClipPlane = SceneCamera.nearClipPlane;
 #if UNITY_5_6_OR_NEWER
@@ -375,7 +374,7 @@ public class FogVolumeCamera : MonoBehaviour
             if (SceneCamera.stereoEnabled)
             {
                 Shader.EnableKeyword("FOG_VOLUME_STEREO_ON");
-                //Left eye            
+                //Left eye
 
                 if (SceneCamera.stereoTargetEye == StereoTargetEyeMask.Both || SceneCamera.stereoTargetEye == StereoTargetEyeMask.Left)
                 {
@@ -389,7 +388,7 @@ public class FogVolumeCamera : MonoBehaviour
 
                     Shader.SetGlobalTexture("RT_Depth", RT_Depth);
                 }
-                //Right eye            
+                //Right eye
 
                 if (SceneCamera.stereoTargetEye == StereoTargetEyeMask.Both || SceneCamera.stereoTargetEye == StereoTargetEyeMask.Right)
                 {
@@ -442,7 +441,7 @@ public class FogVolumeCamera : MonoBehaviour
             if (SceneCamera.stereoEnabled)
             {
                 Shader.EnableKeyword("FOG_VOLUME_STEREO_ON");
-                //Left eye            
+                //Left eye
 
                 if (SceneCamera.stereoTargetEye == StereoTargetEyeMask.Both || SceneCamera.stereoTargetEye == StereoTargetEyeMask.Left)
                 {
@@ -455,7 +454,7 @@ public class FogVolumeCamera : MonoBehaviour
                     _CameraRender.RenderEye(RT_FogVolume, eyePos, eyeRot, projectionMatrix, null);
                 }
 
-                //Right eye            
+                //Right eye
 
                 if (SceneCamera.stereoTargetEye == StereoTargetEyeMask.Both || SceneCamera.stereoTargetEye == StereoTargetEyeMask.Right)
                 {
@@ -511,7 +510,7 @@ public class FogVolumeCamera : MonoBehaviour
                         Vector4 texelSize = new Vector4(1.0f / stepWidth, 1.0f / stepHeight, 0.0f, 0.0f);
                         bilateralMaterial.SetFloat("_UpsampleDepthThreshold", upsampleDepthThreshold);
                         bilateralMaterial.SetVector("_TexelSize", texelSize);
-                        
+
                         bilateralMaterial.SetTexture("_HiResDepthBuffer", RT_Depth);
 
                         lowProfileDepthRT[downsampleStep] =
